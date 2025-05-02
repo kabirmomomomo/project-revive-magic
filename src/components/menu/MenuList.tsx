@@ -22,13 +22,11 @@ const MenuList: React.FC<MenuListProps> = ({
 }) => {
   const isMobile = useIsMobile();
   
-  console.log("MenuList rendering with activeTab:", activeTab);
-  
   // Filter categories by tab and search
   const filteredCategories = categories
     .filter(category => {
       // First filter by active tab
-      if (activeTab === "all") {
+      if (activeTab === "all" || category.type === undefined) {
         return true;
       }
       return category.type === activeTab;

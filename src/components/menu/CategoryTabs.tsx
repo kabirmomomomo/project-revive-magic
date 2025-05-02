@@ -16,11 +16,6 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({ activeTab, onTabChange }) =
 
   const tabs: Array<{ value: CategoryType; label: string; icon: React.ReactNode }> = [
     { 
-      value: "all", 
-      label: "ALL", 
-      icon: <Utensils className="h-4 w-4 md:mr-2" /> 
-    },
-    { 
       value: "food", 
       label: "FOOD", 
       icon: <Utensils className="h-4 w-4 md:mr-2" /> 
@@ -42,15 +37,9 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({ activeTab, onTabChange }) =
     }
   ];
 
-  // Ensure the tab change handler correctly passes the selected value
-  const handleTabChange = (value: string) => {
-    console.log("Tab changed to:", value);
-    onTabChange(value as CategoryType);
-  };
-
   return (
-    <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-      <TabsList className="w-full grid grid-cols-5 h-12 bg-amber-100 dark:bg-amber-900/20 p-0">
+    <Tabs value={activeTab} onValueChange={(value) => onTabChange(value as CategoryType)} className="w-full">
+      <TabsList className="w-full grid grid-cols-4 h-12 bg-amber-100 dark:bg-amber-900/20 p-0">
         {tabs.map((tab) => (
           <TabsTrigger
             key={tab.value}
@@ -64,7 +53,6 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({ activeTab, onTabChange }) =
             <span className="flex items-center">
               {tab.icon}
               {!isMobile && tab.label}
-              {isMobile && tab.value === "all" && "ALL"}
             </span>
           </TabsTrigger>
         ))}

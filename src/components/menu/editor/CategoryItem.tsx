@@ -39,9 +39,6 @@ const CategoryItem: React.FC<CategoryItemProps> = ({
   setActiveItemId,
   categoriesLength,
 }) => {
-  // Ensure we have a valid type or default to "all"
-  const categoryType = category.type || "all";
-  
   return (
     <div className="border rounded-lg p-2 md:p-3 space-y-2 transition-all duration-200 hover:shadow-sm">
       <div className="flex justify-between items-center gap-2">
@@ -67,7 +64,7 @@ const CategoryItem: React.FC<CategoryItemProps> = ({
         
         <div className="flex items-center gap-1">
           <Select 
-            value={categoryType} 
+            value={category.type || "all"} 
             onValueChange={(value) => updateCategory(category.id, category.name, value as CategoryType)}
           >
             <SelectTrigger className="h-8 w-24 md:w-28">
