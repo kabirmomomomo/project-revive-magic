@@ -361,11 +361,8 @@ export type Database = {
           created_at: string | null
           device_id: string | null
           id: string
-          payment_method: string | null
-          payment_status: string | null
           restaurant_id: string
           status: string
-          stripe_session_id: string | null
           table_id: string | null
           total_amount: number
           updated_at: string | null
@@ -375,11 +372,8 @@ export type Database = {
           created_at?: string | null
           device_id?: string | null
           id?: string
-          payment_method?: string | null
-          payment_status?: string | null
           restaurant_id: string
           status?: string
-          stripe_session_id?: string | null
           table_id?: string | null
           total_amount: number
           updated_at?: string | null
@@ -389,11 +383,8 @@ export type Database = {
           created_at?: string | null
           device_id?: string | null
           id?: string
-          payment_method?: string | null
-          payment_status?: string | null
           restaurant_id?: string
           status?: string
-          stripe_session_id?: string | null
           table_id?: string | null
           total_amount?: number
           updated_at?: string | null
@@ -412,18 +403,11 @@ export type Database = {
           location: string | null
           name: string
           opening_time: string | null
-          payment_gateway_merchant_id: string | null
-          payment_gateway_public_key: string | null
-          payment_gateway_type: string | null
           payment_qr_code: string | null
           phone: string | null
-          stripe_account_id: string | null
-          stripe_public_key: string | null
           table_count: number | null
           updated_at: string | null
           upi_id: string | null
-          use_payment_gateway: boolean | null
-          use_stripe_payments: boolean | null
           user_id: string
           wifi_password: string | null
         }
@@ -437,18 +421,11 @@ export type Database = {
           location?: string | null
           name: string
           opening_time?: string | null
-          payment_gateway_merchant_id?: string | null
-          payment_gateway_public_key?: string | null
-          payment_gateway_type?: string | null
           payment_qr_code?: string | null
           phone?: string | null
-          stripe_account_id?: string | null
-          stripe_public_key?: string | null
           table_count?: number | null
           updated_at?: string | null
           upi_id?: string | null
-          use_payment_gateway?: boolean | null
-          use_stripe_payments?: boolean | null
           user_id: string
           wifi_password?: string | null
         }
@@ -462,18 +439,11 @@ export type Database = {
           location?: string | null
           name?: string
           opening_time?: string | null
-          payment_gateway_merchant_id?: string | null
-          payment_gateway_public_key?: string | null
-          payment_gateway_type?: string | null
           payment_qr_code?: string | null
           phone?: string | null
-          stripe_account_id?: string | null
-          stripe_public_key?: string | null
           table_count?: number | null
           updated_at?: string | null
           upi_id?: string | null
-          use_payment_gateway?: boolean | null
-          use_stripe_payments?: boolean | null
           user_id?: string
           wifi_password?: string | null
         }
