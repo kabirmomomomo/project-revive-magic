@@ -43,6 +43,7 @@ export interface MenuCategoryUI {
   id: string;
   name: string;
   items: MenuItemUI[];
+  type?: CategoryType;
 }
 
 export interface RestaurantUI {
@@ -271,7 +272,7 @@ export const getRestaurantById = async (id: string): Promise<RestaurantUI | null
               addons.push({
                 id: addon.id,
                 title: addon.title,
-                type: addon.type,
+                type: addon.type as 'Single choice' | 'Multiple choice',
                 options: options || [],
               });
             }

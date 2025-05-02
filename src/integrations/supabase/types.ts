@@ -550,6 +550,10 @@ export type Database = {
         Args: { table_name: string; table_definition: string }
         Returns: undefined
       }
+      execute_sql: {
+        Args: { sql_string: string }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never

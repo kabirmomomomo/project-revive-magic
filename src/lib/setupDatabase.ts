@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { executeSql } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
 
 export const setupDatabase = async () => {
@@ -215,35 +216,28 @@ export const handleTableConstraints = async () => {
       return false;
     }
 
-    // Instead of using supabase client for tables_temp, use the RPC function
-    const { error: tempTableError } = await supabase.rpc(
-      'create_table_if_not_exists',
-      {
-        table_name: 'tables_temp',
-        table_definition: `
-          id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-          restaurant_id UUID NOT NULL,
-          table_number INTEGER NOT NULL,
-          created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()),
-          updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
-        `
-      }
-    );
+    // Instead of using supabase client for tables_temp, use the executeSql function
+    const { error: tempTableError } = await executeSql(`
+      CREATE TABLE IF NOT EXISTS tables_temp (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        restaurant_id UUID NOT NULL,
+        table_number INTEGER NOT NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()),
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
+      );
+    `);
 
     if (tempTableError) {
       console.error('Error creating temporary table:', tempTableError);
       return false;
     }
 
-    // Create a test entry using raw SQL via RPC
-    const { error: insertError } = await supabase.rpc(
-      'execute_sql',
-      {
-        sql_string: `INSERT INTO tables_temp (restaurant_id, table_number) 
-                    VALUES ('00000000-0000-0000-0000-000000000000', 0)
-                    ON CONFLICT DO NOTHING`
-      }
-    );
+    // Create a test entry using raw SQL via executeSql
+    const { error: insertError } = await executeSql(`
+      INSERT INTO tables_temp (restaurant_id, table_number) 
+      VALUES ('00000000-0000-0000-0000-000000000000', 0)
+      ON CONFLICT DO NOTHING
+    `);
 
     if (insertError && !insertError.message.includes('does not exist')) {
       console.error('Error with temporary operation:', insertError);
