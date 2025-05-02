@@ -65,7 +65,7 @@ const CategoryItem: React.FC<CategoryItemProps> = ({
         <div className="flex items-center gap-1">
           <Select 
             value={category.type || "all"} 
-            onValueChange={(value) => updateCategory(category.id, category.name, value as CategoryType)}
+            onValueChange={(value: CategoryType) => updateCategory(category.id, category.name, value)}
           >
             <SelectTrigger className="h-8 w-24 md:w-28">
               <SelectValue placeholder="Type" />

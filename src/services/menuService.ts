@@ -438,6 +438,7 @@ export const saveRestaurantMenu = async (restaurant: RestaurantUI) => {
           name: category.name,
           restaurant_id: id,
           order: index,
+          type: category.type || null, // Ensure type is saved to database
           updated_at: new Date().toISOString()
         });
       
@@ -450,6 +451,7 @@ export const saveRestaurantMenu = async (restaurant: RestaurantUI) => {
               name: category.name,
               restaurant_id: id,
               order: index,
+              type: category.type || null, // Ensure type is saved to database
               updated_at: new Date().toISOString()
             });
           

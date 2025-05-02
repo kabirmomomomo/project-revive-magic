@@ -3,7 +3,7 @@ import React from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CategoryType } from "@/types/menu";
 import { cn } from "@/lib/utils";
-import { Utensils, Wine, Beer, Heart } from "lucide-react";
+import { Utensils, Wine, Beer, Heart, Menu } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface CategoryTabsProps {
@@ -15,6 +15,11 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({ activeTab, onTabChange }) =
   const isMobile = useIsMobile();
 
   const tabs: Array<{ value: CategoryType; label: string; icon: React.ReactNode }> = [
+    {
+      value: "all",
+      label: "ALL",
+      icon: <Menu className="h-4 w-4 md:mr-2" />
+    },
     { 
       value: "food", 
       label: "FOOD", 
@@ -39,7 +44,7 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({ activeTab, onTabChange }) =
 
   return (
     <Tabs value={activeTab} onValueChange={(value) => onTabChange(value as CategoryType)} className="w-full">
-      <TabsList className="w-full grid grid-cols-4 h-12 bg-amber-100 dark:bg-amber-900/20 p-0">
+      <TabsList className="w-full grid grid-cols-5 h-12 bg-amber-100 dark:bg-amber-900/20 p-0">
         {tabs.map((tab) => (
           <TabsTrigger
             key={tab.value}
@@ -49,6 +54,7 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({ activeTab, onTabChange }) =
               tab.value === activeTab ? "font-bold" : "font-medium",
               isMobile ? "text-xs" : "text-base"
             )}
+            onClick={() => console.log(`Tab clicked: ${tab.value}`)}
           >
             <span className="flex items-center">
               {tab.icon}
