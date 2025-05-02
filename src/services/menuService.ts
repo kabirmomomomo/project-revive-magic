@@ -4,6 +4,7 @@ import { toast } from '@/components/ui/sonner';
 import { handleRelationDoesNotExistError } from '@/lib/setupDatabase';
 import { createClient } from '@supabase/supabase-js';
 import { optimizeImage } from '@/lib/imageOptimization';
+import { CategoryType } from '@/types/menu';
 
 // Type definitions for UI
 export interface MenuItemUI {
