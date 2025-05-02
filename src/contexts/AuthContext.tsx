@@ -1,9 +1,9 @@
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Session, User } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase';
 import { useNavigate } from 'react-router-dom';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '@/components/ui/sonner';
 
 interface AuthContextType {
   session: Session | null;
@@ -12,7 +12,6 @@ interface AuthContextType {
   supabase: typeof supabase;
   signUp: (email: string, password: string, name: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
-  signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -67,43 +66,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       if (data?.user) {
         console.log('Signup successful, user created:', data.user.id);
-        toast({
-          title: "Success",
-          description: "Account created successfully!",
-          variant: "default",
-        });
+        toast.success("Account created successfully!");
         navigate('/menu-editor');
       } else {
         console.log('Signup completed without error but no user returned');
-        toast({
-          title: "Please check your email",
-          description: "Please check your email to confirm your account",
-          variant: "default",
-        });
+        toast.info("Please check your email to confirm your account");
       }
     } catch (error) {
       console.error('Error signing up:', error);
       
       if (error instanceof Error) {
         if (error.message.includes('fetch')) {
-          toast({
-            title: "Network Error",
-            description: "Network error. Please check your connection and try again.",
-            variant: "destructive",
-          });
+          toast.error('Network error. Please check your connection and try again.');
         } else {
-          toast({
-            title: "Sign Up Error",
-            description: error.message,
-            variant: "destructive",
-          });
+          toast.error(error.message);
         }
       } else {
-        toast({
-          title: "Sign Up Error",
-          description: "Failed to sign up. Please try again later.",
-          variant: "destructive",
-        });
+        toast.error('Failed to sign up. Please try again later.');
       }
     } finally {
       setLoading(false);
@@ -126,88 +105,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       
       console.log('Login successful:', data.user?.id);
-      toast({
-        title: "Success",
-        description: "Login successful!",
-        variant: "default",
-      });
+      toast.success("Login successful!");
       navigate('/menu-editor');
     } catch (error) {
       console.error('Error signing in:', error);
       
       if (error instanceof Error) {
         if (error.message.includes('fetch')) {
-          toast({
-            title: "Network Error",
-            description: "Network error. Please check your connection and try again.",
-            variant: "destructive",
-          });
+          toast.error('Network error. Please check your connection and try again.');
         } else if (error.message.includes('Invalid login')) {
-          toast({
-            title: "Login Error",
-            description: "Invalid email or password",
-            variant: "destructive",
-          });
+          toast.error('Invalid email or password');
         } else {
-          toast({
-            title: "Login Error",
-            description: error.message,
-            variant: "destructive",
-          });
+          toast.error(error.message);
         }
       } else {
-        toast({
-          title: "Login Error",
-          description: "Failed to sign in. Please try again later.",
-          variant: "destructive",
-        });
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const signInWithGoogle = async () => {
-    try {
-      setLoading(true);
-      console.log('Attempting to sign in with Google');
-      
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/menu-editor`
-        }
-      });
-
-      if (error) {
-        console.error('Supabase Google signin error:', error);
-        throw error;
-      }
-      
-      // No need to navigate here as the OAuth flow will handle the redirect
-    } catch (error) {
-      console.error('Error signing in with Google:', error);
-      
-      if (error instanceof Error) {
-        if (error.message.includes('fetch')) {
-          toast({
-            title: "Network Error",
-            description: "Network error. Please check your connection and try again.",
-            variant: "destructive",
-          });
-        } else {
-          toast({
-            title: "Google Login Error",
-            description: error.message,
-            variant: "destructive",
-          });
-        }
-      } else {
-        toast({
-          title: "Google Login Error",
-          description: "Failed to sign in with Google. Please try again later.",
-          variant: "destructive",
-        });
+        toast.error('Failed to sign in. Please try again later.');
       }
     } finally {
       setLoading(false);
@@ -230,11 +142,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       navigate('/login');
     } catch (error) {
       console.error('Error signing out:', error);
-      toast({
-        title: "Sign Out Error",
-        description: error instanceof Error ? error.message : 'Failed to sign out',
-        variant: "destructive",
-      });
+      toast.error(error instanceof Error ? error.message : 'Failed to sign out');
     } finally {
       setLoading(false);
     }
@@ -247,8 +155,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loading, 
       supabase,
       signUp, 
-      signIn,
-      signInWithGoogle, 
+      signIn, 
       signOut 
     }}>
       {children}

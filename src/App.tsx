@@ -23,67 +23,65 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <div className="app-container">
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route 
-              path="/menu-editor" 
-              element={
-                <ProtectedRoute>
-                  <MenuEditor />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/menu-preview/:menuId" 
-              element={
-                <CartProvider>
-                  <OrderProvider>
-                    <MenuPreview />
-                  </OrderProvider>
-                </CartProvider>
-              } 
-            />
-            <Route path="/menu-preview" element={<Navigate to="/menu-editor" replace />} />
-            <Route 
-              path="/payment/:menuId" 
-              element={
-                <CartProvider>
-                  <OrderProvider>
-                    <PaymentPage />
-                  </OrderProvider>
-                </CartProvider>
-              } 
-            />
-            <Route 
-              path="/thank-you" 
-              element={
-                <CartProvider>
-                  <OrderProvider>
-                    <ThankYou />
-                  </OrderProvider>
-                </CartProvider>
-              } 
-            />
-            <Route 
-              path="/restaurant/:restaurantId/orders" 
-              element={
-                <CartProvider>
-                  <OrderProvider>
-                    <OrderDashboard />
-                  </OrderProvider>
-                </CartProvider>
-              } 
-            />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </TooltipProvider>
-      </div>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route 
+            path="/menu-editor" 
+            element={
+              <ProtectedRoute>
+                <MenuEditor />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/menu-preview/:menuId" 
+            element={
+              <CartProvider>
+                <OrderProvider>
+                  <MenuPreview />
+                </OrderProvider>
+              </CartProvider>
+            } 
+          />
+          <Route path="/menu-preview" element={<Navigate to="/menu-editor" replace />} />
+          <Route 
+            path="/payment/:menuId" 
+            element={
+              <CartProvider>
+                <OrderProvider>
+                  <PaymentPage />
+                </OrderProvider>
+              </CartProvider>
+            } 
+          />
+          <Route 
+            path="/thank-you" 
+            element={
+              <CartProvider>
+                <OrderProvider>
+                  <ThankYou />
+                </OrderProvider>
+              </CartProvider>
+            } 
+          />
+          <Route 
+            path="/restaurant/:restaurantId/orders" 
+            element={
+              <CartProvider>
+                <OrderProvider>
+                  <OrderDashboard />
+                </OrderProvider>
+              </CartProvider>
+            } 
+          />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </TooltipProvider>
     </AuthProvider>
   </QueryClientProvider>
 );

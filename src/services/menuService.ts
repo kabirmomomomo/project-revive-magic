@@ -244,7 +244,7 @@ export const getRestaurantById = async (id: string): Promise<RestaurantUI | null
         const addonDetails = await Promise.all(
           addonMappingsResult.data.map(mapping =>
             supabase
-              .from('menu_item_addons')
+              .from('menu_addons')
               .select('*')
               .eq('id', mapping.addon_id)
               .single()
@@ -262,11 +262,10 @@ export const getRestaurantById = async (id: string): Promise<RestaurantUI | null
 
             if (optionsError) throw optionsError;
 
-            // Type-safe addon usage
             addons.push({
               id: addon.id,
               title: addon.title,
-              type: addon.type as 'Single choice' | 'Multiple choice',
+              type: addon.type,
               options: options || [],
             });
           }
