@@ -20,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
+import { supabase } from "@/lib/supabase"; // Import the supabase client
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
