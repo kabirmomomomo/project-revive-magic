@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { z } from "zod";
@@ -64,9 +63,29 @@ const Login = () => {
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
     try {
-      await signInWithGoogle();
+      // Use the explicit redirectTo property with the current URL
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/menu-editor`,
+          // Adding query parameters to help with debugging
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
+        }
+      });
+
+      if (error) {
+        console.error("Google sign-in error:", error);
+        toast.error(`Google sign-in failed: ${error.message}`);
+      } else {
+        // Success is handled by the redirect
+        toast.success("Redirecting to Google...");
+      }
     } catch (error) {
       console.error("Google sign-in error:", error);
+      toast.error(`Google sign-in failed: ${error instanceof Error ? error.message : "Unknown error"}`);
     } finally {
       setGoogleLoading(false);
     }
