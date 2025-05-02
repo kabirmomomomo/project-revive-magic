@@ -10,3 +10,9 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // import { supabase } from "@/integrations/supabase/client";
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+// Add an execute_sql RPC function that we'll need for raw SQL execution
+export const executeSql = async (sqlString: string) => {
+  const { data, error } = await supabase.rpc('execute_sql', { sql_string: sqlString });
+  return { data, error };
+};

@@ -241,33 +241,42 @@ export const getRestaurantById = async (id: string): Promise<RestaurantUI | null
       
       // Fetch addon details in parallel
       if (addonMappingsResult.data?.length) {
-        const addonDetails = await Promise.all(
-          addonMappingsResult.data.map(mapping =>
-            supabase
-              .from('menu_addons')
+        for (const mapping of addonMappingsResult.data) {
+          try {
+            // Use direct query with menu_item_addons instead of menu_addons
+            const { data: addon, error: addonError } = await supabase
+              .from('menu_item_addons')
               .select('*')
               .eq('id', mapping.addon_id)
-              .single()
-          )
-        );
+              .single();
 
-        for (const { data: addon, error: addonError } of addonDetails) {
-          if (addonError) throw addonError;
-          if (addon) {
-            const { data: options, error: optionsError } = await supabase
-              .from('menu_addon_options')
-              .select('*')
-              .eq('addon_id', addon.id)
-              .order('order', { ascending: true });
+            if (addonError) {
+              if (addonError.code !== 'PGRST116') {
+                throw addonError;
+              }
+              continue;
+            }
 
-            if (optionsError) throw optionsError;
+            if (addon) {
+              const { data: options, error: optionsError } = await supabase
+                .from('menu_addon_options')
+                .select('*')
+                .eq('addon_id', addon.id)
+                .order('order', { ascending: true });
 
-            addons.push({
-              id: addon.id,
-              title: addon.title,
-              type: addon.type,
-              options: options || [],
-            });
+              if (optionsError && optionsError.code !== 'PGRST116') {
+                throw optionsError;
+              }
+
+              addons.push({
+                id: addon.id,
+                title: addon.title,
+                type: addon.type,
+                options: options || [],
+              });
+            }
+          } catch (error) {
+            console.error('Error fetching addon details:', error);
           }
         }
       }

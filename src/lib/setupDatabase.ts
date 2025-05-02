@@ -215,20 +215,8 @@ export const handleTableConstraints = async () => {
       return false;
     }
 
-    // Create a temporary table
-    const { error: tempError } = await supabase
-      .from('tables_temp')
-      .insert({ id: '00000000-0000-0000-0000-000000000000', restaurant_id: '00000000-0000-0000-0000-000000000000', table_number: 0 })
-      .select();
-
-    // If error is not about table existing, return false
-    if (tempError && !tempError.message.includes('does not exist')) {
-      console.error('Error with temporary operation:', tempError);
-      return false;
-    }
-
-    // Copy data to temporary table
-    const { error: copyError } = await supabase.rpc(
+    // Instead of using supabase client for tables_temp, use the RPC function
+    const { error: tempTableError } = await supabase.rpc(
       'create_table_if_not_exists',
       {
         table_name: 'tables_temp',
@@ -242,8 +230,23 @@ export const handleTableConstraints = async () => {
       }
     );
 
-    if (copyError) {
-      console.error('Error creating temporary table:', copyError);
+    if (tempTableError) {
+      console.error('Error creating temporary table:', tempTableError);
+      return false;
+    }
+
+    // Create a test entry using raw SQL via RPC
+    const { error: insertError } = await supabase.rpc(
+      'execute_sql',
+      {
+        sql_string: `INSERT INTO tables_temp (restaurant_id, table_number) 
+                    VALUES ('00000000-0000-0000-0000-000000000000', 0)
+                    ON CONFLICT DO NOTHING`
+      }
+    );
+
+    if (insertError && !insertError.message.includes('does not exist')) {
+      console.error('Error with temporary operation:', insertError);
       return false;
     }
 
