@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,6 +38,11 @@ const CategoryItem: React.FC<CategoryItemProps> = ({
   setActiveItemId,
   categoriesLength,
 }) => {
+  const handleCategoryTypeChange = (value: string) => {
+    console.log(`Changing category type to: ${value}`);
+    updateCategory(category.id, category.name, value as CategoryType);
+  };
+
   return (
     <div className="border rounded-lg p-2 md:p-3 space-y-2 transition-all duration-200 hover:shadow-sm">
       <div className="flex justify-between items-center gap-2">
@@ -65,7 +69,7 @@ const CategoryItem: React.FC<CategoryItemProps> = ({
         <div className="flex items-center gap-1">
           <Select 
             value={category.type || "all"} 
-            onValueChange={(value: CategoryType) => updateCategory(category.id, category.name, value)}
+            onValueChange={handleCategoryTypeChange}
           >
             <SelectTrigger className="h-8 w-24 md:w-28">
               <SelectValue placeholder="Type" />

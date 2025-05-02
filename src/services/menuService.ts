@@ -301,6 +301,7 @@ export const getRestaurantById = async (id: string): Promise<RestaurantUI | null
     categoriesWithItems.push({
       id: category.id,
       name: category.name,
+      type: category.type as CategoryType | undefined,
       items: menuItems,
     });
   }
