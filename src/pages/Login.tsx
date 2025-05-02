@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { z } from "zod";
@@ -38,6 +39,7 @@ const Login = () => {
   const [resetEmail, setResetEmail] = useState("");
   const [resetLoading, setResetLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleError, setGoogleError] = useState<string | null>(null);
 
   const defaultValues: Partial<LoginFormValues> = {
     email: "",
@@ -62,13 +64,19 @@ const Login = () => {
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
+    setGoogleError(null);
+    
     try {
-      // Use the explicit redirectTo property with the current URL
-      const { error } = await supabase.auth.signInWithOAuth({
+      console.log("Starting Google sign-in process...");
+      
+      // Log current URL for debugging
+      console.log("Current origin:", window.location.origin);
+      console.log("Redirect URL:", `${window.location.origin}/menu-editor`);
+      
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/menu-editor`,
-          // Adding query parameters to help with debugging
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -78,14 +86,17 @@ const Login = () => {
 
       if (error) {
         console.error("Google sign-in error:", error);
+        setGoogleError(error.message);
         toast.error(`Google sign-in failed: ${error.message}`);
       } else {
-        // Success is handled by the redirect
+        console.log("Google sign-in initiated successfully, redirecting...");
         toast.success("Redirecting to Google...");
       }
     } catch (error) {
-      console.error("Google sign-in error:", error);
-      toast.error(`Google sign-in failed: ${error instanceof Error ? error.message : "Unknown error"}`);
+      console.error("Google sign-in exception:", error);
+      const errorMessage = error instanceof Error ? error.message : "Connection refused. Please check your network and try again.";
+      setGoogleError(errorMessage);
+      toast.error(`Google sign-in failed: ${errorMessage}`);
     } finally {
       setGoogleLoading(false);
     }
@@ -273,6 +284,15 @@ const Login = () => {
                 </>
               )}
             </Button>
+
+            {googleError && (
+              <div className="text-sm text-red-500 text-center mt-2 p-2 bg-red-50 rounded-md">
+                <p>Connection error: {googleError}</p>
+                <p className="mt-1 text-xs text-gray-500">
+                  Please check your network connection or verify Google auth configuration.
+                </p>
+              </div>
+            )}
           </>
         ) : (
           <div className="space-y-6">
