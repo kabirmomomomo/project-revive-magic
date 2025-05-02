@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/components/ui/sonner";
@@ -17,6 +18,7 @@ import {
   MenuItemAddonUI,
   MenuAddonOptionUI
 } from "@/services/menuService";
+import { CategoryType } from "@/types/menu"; // Add this import
 import { useIsMobile } from "@/hooks/use-mobile";
 import { lazy, Suspense } from 'react';
 import LoadingAnimation from '@/components/LoadingAnimation';
