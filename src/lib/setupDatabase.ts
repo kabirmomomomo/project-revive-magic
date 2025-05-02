@@ -1,3 +1,4 @@
+
 import { supabase } from './supabase';
 import { toast } from '@/components/ui/sonner';
 
@@ -215,20 +216,8 @@ export const handleTableConstraints = async () => {
       return false;
     }
 
-    // Create a temporary table
-    const { error: tempError } = await supabase
-      .from('tables_temp')
-      .insert({ id: '00000000-0000-0000-0000-000000000000', restaurant_id: '00000000-0000-0000-0000-000000000000', table_number: 0 })
-      .select();
-
-    // If error is not about table existing, return false
-    if (tempError && !tempError.message.includes('does not exist')) {
-      console.error('Error with temporary operation:', tempError);
-      return false;
-    }
-
-    // Copy data to temporary table
-    const { error: copyError } = await supabase.rpc(
+    // Use database RPC to create temporary table structure if needed
+    const { error: tempCreateError } = await supabase.rpc(
       'create_table_if_not_exists',
       {
         table_name: 'tables_temp',
@@ -242,8 +231,8 @@ export const handleTableConstraints = async () => {
       }
     );
 
-    if (copyError) {
-      console.error('Error creating temporary table:', copyError);
+    if (tempCreateError) {
+      console.error('Error creating temporary table:', tempCreateError);
       return false;
     }
 
