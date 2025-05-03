@@ -15,10 +15,11 @@ export interface MenuItemUI {
   old_price?: string;
   weight?: string;
   image_url?: string;
-  is_visible?: boolean;
-  is_available?: boolean;
+  is_visible: boolean;
+  is_available: boolean;
   variants?: MenuItemVariantUI[];
   addons?: MenuItemAddonUI[];
+  dietary_type?: 'veg' | 'non-veg' | null;
 }
 
 export interface MenuItemVariantUI {
