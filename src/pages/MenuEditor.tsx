@@ -225,7 +225,7 @@ const MenuEditor = () => {
     categoryId: string,
     itemId: string,
     field: keyof MenuItemUI,
-    value: string | boolean
+    value: string | boolean | null
   ) => {
     setRestaurant(prev => {
       const newState = {
