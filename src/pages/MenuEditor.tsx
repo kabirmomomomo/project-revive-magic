@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/components/ui/sonner";
@@ -54,6 +53,8 @@ const MenuEditor = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
+  const [restaurantToDisplay, setRestaurantToDisplay] = useState<RestaurantUI | null>(null);
+  const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({});
 
   const { data: restaurantData, isLoading: isLoadingRestaurant } = useQuery({
     queryKey: ['restaurant', user?.id],
@@ -208,7 +209,8 @@ const MenuEditor = () => {
                   is_visible: true,
                   is_available: true,
                   variants: [],
-                  addons: []
+                  addons: [],
+                  dietary_type: null
                 },
               ],
             }
@@ -723,6 +725,17 @@ const MenuEditor = () => {
       />
     );
   };
+
+  // Initialize first category as open - optimized to run only when needed
+  useEffect(() => {
+    if (restaurantToDisplay && restaurantToDisplay.categories.length > 0) {
+      const initialOpenState: Record<string, boolean> = {};
+      restaurantToDisplay.categories.forEach((category, index) => {
+        initialOpenState[category.id] = index === 0; // Open only the first category
+      });
+      setOpenCategories(initialOpenState);
+    }
+  }, [restaurantToDisplay?.categories]);
 
   return (
     <div className="container mx-auto py-4 md:py-8 px-3 md:px-4 max-w-7xl">

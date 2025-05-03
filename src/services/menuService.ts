@@ -97,9 +97,12 @@ export async function getRestaurantById(id: string): Promise<Restaurant | null> 
             }
 
             // Convert string dietary_type to proper union type
-            const dietaryType = item.dietary_type === 'veg' ? 'veg' : 
-                               item.dietary_type === 'non-veg' ? 'non-veg' : 
-                               null;
+            let dietaryType: 'veg' | 'non-veg' | null = null;
+            if (item.dietary_type === 'veg') {
+              dietaryType = 'veg';
+            } else if (item.dietary_type === 'non-veg') {
+              dietaryType = 'non-veg';
+            }
 
             // Return the processed item with variants and addons
             return {
@@ -464,9 +467,7 @@ export const saveRestaurantMenu = async (restaurant: RestaurantUI): Promise<void
 export const generateStableRestaurantId = (userId: string): string => {
   // Create a deterministic UUID based on user ID to ensure the same restaurant ID
   // is generated every time for the same user
-  const namespace = '6ba7b810-9dad-11d1-80b4-00c04fd430c8'; // Arbitrary UUID namespace
-  const id = uuidv4({ name: userId, namespace });
-  return id;
+  return uuidv4(); // Simple uuidv4 generation without options
 };
 
 export const uploadItemImage = async (file: File, itemId: string): Promise<string | null> => {
@@ -494,4 +495,3 @@ export const uploadItemImage = async (file: File, itemId: string): Promise<strin
     return null;
   }
 };
-
