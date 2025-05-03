@@ -1,6 +1,6 @@
 
-import { ReactNode } from 'react';
-import { Navigate } from 'react-router-dom';
+import { ReactNode, useEffect } from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface ProtectedRouteProps {
@@ -9,6 +9,14 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { user, loading } = useAuth();
+  const location = useLocation();
+
+  // Clean hash fragments if they exist to prevent parsing issues
+  useEffect(() => {
+    if (location.hash && (location.hash.includes('access_token') || location.hash.includes('error'))) {
+      window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
+    }
+  }, [location.hash]);
 
   if (loading) {
     return (

@@ -19,6 +19,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/contexts/AuthContext";
+import { Separator } from "@/components/ui/separator";
 
 const signupSchema = z
   .object({
@@ -40,7 +41,7 @@ const signupSchema = z
 type SignupFormValues = z.infer<typeof signupSchema>;
 
 const Signup = () => {
-  const { signUp, loading } = useAuth();
+  const { signUp, signInWithGoogle, loading } = useAuth();
   const [isHoveringButton, setIsHoveringButton] = useState(false);
 
   const defaultValues: Partial<SignupFormValues> = {
@@ -58,6 +59,14 @@ const Signup = () => {
 
   const onSubmit = async (data: SignupFormValues) => {
     await signUp(data.email, data.password, data.name);
+  };
+
+  const handleGoogleSignUp = async () => {
+    try {
+      await signInWithGoogle();
+    } catch (error) {
+      console.error("Google signup error:", error);
+    }
   };
 
   return (
@@ -235,6 +244,30 @@ const Signup = () => {
                   <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
                 </>
               )}
+            </Button>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <Separator className="w-full" />
+              </div>
+              <div className="relative flex justify-center text-xs">
+                <span className="bg-white px-2 text-gray-500">or continue with</span>
+              </div>
+            </div>
+
+            <Button 
+              type="button"
+              variant="outline"
+              className="w-full flex items-center justify-center gap-2 transition-all duration-300 hover:bg-gray-50"
+              onClick={handleGoogleSignUp}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-500">
+                <path d="M18.593 8.3c-.3-.84-.713-1.59-1.238-2.24H18.6a7.21 7.21 0 0 1 3.004 5.936c0 1.346-.37 2.603-1.01 3.68l-1.935-.16a13.439 13.439 0 0 0-.234-2.317" />
+                <path d="M18.6 6.06h-7.2v4.2h4.067a5.448 5.448 0 0 1-1.536 2.58c-.52.513-1.168.888-1.896 1.117a5.451 5.451 0 0 1-2.164.22 5.395 5.395 0 0 1-2.946-1.184 5.401 5.401 0 0 1-1.884-2.662" />
+                <path d="M5.401 9.96a5.367 5.367 0 0 1 2.2-3.15 5.423 5.423 0 0 1 6.2-.37L15.796 4.2a9.78 9.78 0 0 0-7.2-1.166 9.728 9.728 0 0 0-6.173 4.566" />
+                <path d="M11.4 20.995a9.796 9.796 0 0 0 6.88-2.693l-3.21-2.693a5.364 5.364 0 0 1-3.67 1.386 5.367 5.367 0 0 1-4.84-3.028L2.4 16.812a9.76 9.76 0 0 0 9 4.183z" />
+              </svg>
+              Sign up with Google
             </Button>
           </form>
         </Form>

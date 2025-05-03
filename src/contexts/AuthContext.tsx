@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from '@/components/ui/sonner';
 
 interface AuthContextType {
@@ -12,6 +12,7 @@ interface AuthContextType {
   supabase: typeof supabase;
   signUp: (email: string, password: string, name: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -22,8 +23,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
+    // Handle potential auth redirect with hash fragments
+    if (window.location.hash && window.location.hash.includes('access_token')) {
+      // Let Supabase handle the token in the hash
+      setLoading(true);
+      // Using setTimeout to ensure this doesn't block rendering
+      setTimeout(() => {
+        // The hash will be processed by the auth.getSession() call
+        console.log('Auth redirect detected, hash will be processed');
+      }, 0);
+    }
+
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Auth state changed:', event, session ? 'Has session' : 'No session');
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       console.log('Initial session check:', session ? 'Logged in' : 'No session');
       setSession(session);
@@ -34,15 +56,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('Auth state changed:', event, session ? 'Has session' : 'No session');
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
     return () => subscription.unsubscribe();
   }, []);
+
+  // Clean hash fragments after processing to avoid issues with URL parsing
+  useEffect(() => {
+    if (location.hash && (location.hash.includes('access_token') || location.hash.includes('error'))) {
+      // Wait until auth processing is likely complete
+      const timer = setTimeout(() => {
+        // Replace the URL without the hash fragment
+        window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [location.hash]);
 
   const signUp = async (email: string, password: string, name: string) => {
     try {
@@ -126,6 +154,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const signInWithGoogle = async () => {
+    try {
+      setLoading(true);
+      console.log('Attempting to sign in with Google');
+      
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/menu-editor`
+        }
+      });
+
+      if (error) {
+        console.error('Supabase Google signin error:', error);
+        throw error;
+      }
+      
+      // No need for navigation here - the OAuth flow will redirect
+    } catch (error) {
+      console.error('Error signing in with Google:', error);
+      setLoading(false);
+      
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error('Failed to sign in with Google. Please try again later.');
+      }
+    }
+  };
+
   const signOut = async () => {
     try {
       setLoading(true);
@@ -155,7 +213,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loading, 
       supabase,
       signUp, 
-      signIn, 
+      signIn,
+      signInWithGoogle,
       signOut 
     }}>
       {children}
