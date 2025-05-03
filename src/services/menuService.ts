@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 import { v4 as uuidv4 } from 'uuid';
 import { toast } from '@/components/ui/sonner';
@@ -495,6 +494,8 @@ export const saveRestaurantMenu = async (restaurant: RestaurantUI) => {
       }
       
       for (let [itemIndex, item] of category.items.entries()) {
+        console.log(`Saving item ${item.id} with dietary_type: ${item.dietary_type}`);
+        
         const { error: itemError } = await supabase
           .from('menu_items')
           .upsert({
@@ -514,7 +515,11 @@ export const saveRestaurantMenu = async (restaurant: RestaurantUI) => {
           });
         
         if (itemError) {
-          console.error("Error updating menu item:", itemError);
+          console.error("Error updating menu item:", itemError, {
+            item_id: item.id,
+            dietary_type: item.dietary_type
+          });
+          
           if (await handleRelationDoesNotExistError(itemError)) {
             const { error: retryError } = await supabase
               .from('menu_items')

@@ -227,6 +227,8 @@ const MenuEditor = () => {
     field: keyof MenuItemUI,
     value: string | boolean | null
   ) => {
+    console.log(`Updating menu item ${itemId}, field: ${field}, value: ${value}`);
+    
     setRestaurant(prev => {
       const newState = {
         ...prev,
@@ -243,6 +245,18 @@ const MenuEditor = () => {
       };
       return newState;
     });
+    
+    // Log the dietary type after updating
+    if (field === "dietary_type") {
+      console.log(`Updated dietary_type for item ${itemId} to ${value}`);
+      // Get the updated item to verify
+      setTimeout(() => {
+        const updatedItem = restaurant.categories
+          .find(c => c.id === categoryId)
+          ?.items.find(i => i.id === itemId);
+        console.log("Updated item state:", updatedItem);
+      }, 100);
+    }
   };
 
   const deleteMenuItem = (categoryId: string, itemId: string) => {
