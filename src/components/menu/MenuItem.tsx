@@ -64,6 +64,8 @@ const MenuItem: React.FC<MenuItemProps> = ({ item, index }) => {
 
   // Helper function to render the dietary icon
   const renderDietaryIcon = () => {
+    console.log("Rendering dietary icon for:", item.name, "Dietary type:", item.dietary_type);
+    
     if (item.dietary_type === "veg") {
       return (
         <span className="inline-flex items-center justify-center ml-1">

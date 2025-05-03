@@ -59,8 +59,14 @@ const MenuEditor = () => {
     queryFn: async () => {
       if (!user?.id) return null;
       
-      const restaurant = await getUserRestaurant();
-      return restaurant;
+      try {
+        const restaurant = await getUserRestaurant();
+        console.log("Restaurant data fetched:", restaurant);
+        return restaurant;
+      } catch (error) {
+        console.error("Error fetching restaurant data:", error);
+        return null;
+      }
     },
     enabled: !!user,
   });
@@ -93,6 +99,7 @@ const MenuEditor = () => {
         // Check for saved state
         const savedState = loadState();
         if (savedState && savedState.id === restaurantData.id) {
+          console.log("Loading saved state from localStorage");
           setRestaurant(savedState);
           
           const expanded: Record<string, boolean> = {};
@@ -101,6 +108,7 @@ const MenuEditor = () => {
           });
           setExpandedCategories(expanded);
         } else {
+          console.log("Loading state from database");
           setRestaurant(restaurantData);
           
           const expanded: Record<string, boolean> = {};
@@ -226,6 +234,8 @@ const MenuEditor = () => {
     field: keyof MenuItemUI,
     value: string | boolean
   ) => {
+    console.log(`Updating menu item ${itemId}, field: ${String(field)}, value:`, value);
+    
     setRestaurant(prev => {
       const newState = {
         ...prev,
@@ -646,6 +656,7 @@ const MenuEditor = () => {
   };
 
   const handleSaveMenu = () => {
+    console.log("Saving menu to database");
     saveMenuMutation.mutate(restaurant, {
       onSuccess: () => {
         markChangesAsSaved();

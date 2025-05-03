@@ -92,9 +92,10 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
   // Update state when activeItem changes
   useEffect(() => {
     // Ensure that dietary_type is properly synced from the activeItem prop
+    console.log("Active item updated in editor:", activeItem);
+    console.log("Dietary type from database:", activeItem.dietary_type);
     setDietaryType(activeItem.dietary_type || "");
-    console.log("Dietary type updated in editor:", activeItem.dietary_type);
-  }, [activeItem.dietary_type, activeItem.id]);
+  }, [activeItem]);
 
   // Auto-select input fields when component mounts or when new item is added
   useEffect(() => {
@@ -123,10 +124,11 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
   };
 
   const handleDietaryTypeChange = (value: string) => {
+    console.log("Setting dietary type to:", value);
     setDietaryType(value);
+    
     // Send the proper null value to the database when "none" is selected
     const dietaryValue = value === "" ? null : value;
-    console.log("Setting dietary type to:", dietaryValue);
     
     // Update the MenuItem with the new dietary type
     updateMenuItem(activeCategoryId, activeItem.id, "dietary_type", dietaryValue);
