@@ -11,6 +11,7 @@
     is_available?: boolean;
     variants?: MenuItemVariant[];
     addons?: MenuItemAddon[];
+    dietary_type?: 'veg' | 'non-veg' | null;
   }
 
   export interface MenuItemVariant {
