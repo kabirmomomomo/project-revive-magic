@@ -1,3 +1,4 @@
+
 import { supabase } from '@/lib/supabase';
 import { v4 as uuidv4 } from 'uuid';
 import { toast } from '@/components/ui/sonner';
@@ -209,6 +210,7 @@ export const getRestaurantById = async (id: string): Promise<RestaurantUI | null
         categoriesWithItems.push({
           id: category.id,
           name: category.name,
+          type: category.type as CategoryType | undefined,
           items: [],
         });
         continue;
@@ -296,6 +298,7 @@ export const getRestaurantById = async (id: string): Promise<RestaurantUI | null
         is_available: item.is_available,
         variants: variantsResult.data || [],
         addons,
+        dietary_type: item.dietary_type as "veg" | "non-veg" | null,
       });
     }
 
@@ -440,7 +443,7 @@ export const saveRestaurantMenu = async (restaurant: RestaurantUI) => {
           name: category.name,
           restaurant_id: id,
           order: index,
-          type: category.type || null, // Ensure type is saved to database
+          type: category.type || null,
           updated_at: new Date().toISOString()
         });
       
@@ -453,7 +456,7 @@ export const saveRestaurantMenu = async (restaurant: RestaurantUI) => {
               name: category.name,
               restaurant_id: id,
               order: index,
-              type: category.type || null, // Ensure type is saved to database
+              type: category.type || null,
               updated_at: new Date().toISOString()
             });
           
@@ -506,10 +509,12 @@ export const saveRestaurantMenu = async (restaurant: RestaurantUI) => {
             is_available: item.is_available !== false,
             category_id: category.id,
             order: itemIndex,
+            dietary_type: item.dietary_type || null,
             updated_at: new Date().toISOString()
           });
         
         if (itemError) {
+          console.error("Error updating menu item:", itemError);
           if (await handleRelationDoesNotExistError(itemError)) {
             const { error: retryError } = await supabase
               .from('menu_items')
@@ -525,6 +530,7 @@ export const saveRestaurantMenu = async (restaurant: RestaurantUI) => {
                 is_available: item.is_available !== false,
                 category_id: category.id,
                 order: itemIndex,
+                dietary_type: item.dietary_type || null,
                 updated_at: new Date().toISOString()
               });
             

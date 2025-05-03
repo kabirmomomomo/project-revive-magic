@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/components/ui/sonner";
@@ -208,7 +207,8 @@ const MenuEditor = () => {
                   is_visible: true,
                   is_available: true,
                   variants: [],
-                  addons: []
+                  addons: [],
+                  dietary_type: null,
                 },
               ],
             }

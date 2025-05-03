@@ -63,6 +63,7 @@ const MenuItem: React.FC<MenuItemProps> = ({ item, index }) => {
   const hasOptions = !!(item.variants?.length > 0 || item.addons?.length > 0);
 
   const renderDietaryIcon = () => {
+    console.log(`Rendering dietary icon for item ${item.id}: ${item.dietary_type}`);
     if (item.dietary_type === 'veg') {
       return <LeafyGreen size={isMobile ? 14 : 16} className="text-green-600 flex-shrink-0" />;
     } else if (item.dietary_type === 'non-veg') {

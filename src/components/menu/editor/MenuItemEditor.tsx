@@ -116,12 +116,19 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
   };
 
   const handleDietaryTypeChange = (value: string) => {
+    // Make sure to pass the correct type value to the updateMenuItem function
     updateMenuItem(
       activeCategoryId,
       activeItem.id,
       "dietary_type",
       value === "none" ? null : value as "veg" | "non-veg"
     );
+    
+    // Log the change to ensure it's being properly captured
+    console.log(`Setting dietary type to: ${value}`);
+    
+    // Immediately save the menu to persist the change
+    handleSaveMenu();
   };
 
   return (
