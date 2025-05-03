@@ -1,3 +1,4 @@
+
 import React from "react";
 import { cn } from "@/lib/utils";
 import {
@@ -68,8 +69,8 @@ const MenuCategory: React.FC<MenuCategoryProps> = ({
               No items in this category
             </p>
           ) : (
-            category.items.map((item, index) => (
-              <MenuItem key={item.id} item={item} index={index} />
+            category.items.map((item) => (
+              <MenuItem key={item.id} item={item} />
             ))
           )}
         </div>
