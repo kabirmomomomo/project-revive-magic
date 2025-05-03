@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -21,7 +20,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/components/ui/sonner";
 import { supabase } from "@/lib/supabase";
 import { Separator } from "@/components/ui/separator";
-import { useEffect } from "react";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
@@ -82,7 +80,7 @@ const Login = () => {
     setGoogleLoading(true);
     try {
       await signInWithGoogle();
-      // No need to set googleLoading to false here as the page will redirect
+      // Loading state will be managed by the auth context after redirect
     } catch (error) {
       console.error("Google login error:", error);
       setGoogleLoading(false);
