@@ -1,6 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { supabase } from "@/integrations/supabase/client";
-import { Database } from '@/integrations/supabase/types/supabase';
+import { supabase } from "@/lib/supabase";
 import { CategoryType, MenuCategory, MenuItem, Restaurant } from '@/types/menu';
 
 export interface RestaurantUI {
@@ -15,6 +14,8 @@ export interface RestaurantUI {
   wifi_password?: string;
   opening_time?: string;
   closing_time?: string;
+  payment_qr_code?: string;
+  upi_id?: string;
 }
 
 export interface MenuCategoryUI {
@@ -120,7 +121,7 @@ export const getUserRestaurant = async (): Promise<RestaurantUI | null> => {
       return null;
     }
 
-    const transformDatabaseItem = (dbItem: Database['public']['Tables']['menu_items']['Row']): MenuItemUI => ({
+    const transformDatabaseItem = (dbItem: any): MenuItemUI => ({
       id: dbItem.id,
       name: dbItem.name,
       description: dbItem.description || '',
@@ -175,6 +176,8 @@ export const getUserRestaurant = async (): Promise<RestaurantUI | null> => {
       wifi_password: restaurantData.wifi_password || '',
       opening_time: restaurantData.opening_time || '',
       closing_time: restaurantData.closing_time || '',
+      payment_qr_code: restaurantData.payment_qr_code || '',
+      upi_id: restaurantData.upi_id || '',
     };
 
     return restaurant;
@@ -190,6 +193,17 @@ export const saveRestaurantMenu = async (restaurant: RestaurantUI): Promise<void
   }
 
   try {
+    // Get current user ID for the restaurant user_id field
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError) {
+      throw new Error("Failed to get current user ID");
+    }
+
+    const userId = userData.user?.id;
+    if (!userId) {
+      throw new Error("No user ID available");
+    }
+
     // Upsert restaurant
     const { error: restaurantError } = await supabase
       .from('restaurants')
@@ -204,6 +218,9 @@ export const saveRestaurantMenu = async (restaurant: RestaurantUI): Promise<void
         wifi_password: restaurant.wifi_password || null,
         opening_time: restaurant.opening_time || null,
         closing_time: restaurant.closing_time || null,
+        payment_qr_code: restaurant.payment_qr_code || null,
+        upi_id: restaurant.upi_id || null,
+        user_id: userId
       }, { onConflict: 'id' });
 
     if (restaurantError) {
@@ -276,7 +293,10 @@ export const uploadItemImage = async (file: File, itemId: string): Promise<strin
       return null;
     }
 
-    const publicUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${data.Key}`;
+    const { data: { publicUrl } } = supabase.storage
+      .from('menu-images')
+      .getPublicUrl(filePath);
+      
     return publicUrl;
   } catch (error) {
     console.error("Error during image upload:", error);
@@ -336,62 +356,20 @@ export const getRestaurantById = async (id: string): Promise<Restaurant | null> 
           };
         }
 
-        const populatedItems = await Promise.all(
-          items.map(async (item) => {
-            const { data: variants, error: variantsError } = await supabase
-              .from('menu_item_variants')
-              .select('*')
-              .eq('menu_item_id', item.id);
-
-            if (variantsError) {
-              console.error('Error fetching variants:', variantsError);
-            }
-
-            const { data: addons, error: addonsError } = await supabase
-              .from('menu_item_addons')
-              .select('*')
-              .eq('menu_item_id', item.id);
-
-            if (addonsError) {
-              console.error('Error fetching addons:', addonsError);
-            }
-
-            const populatedAddons = await Promise.all(
-              (addons || []).map(async (addon) => {
-                const { data: options, error: optionsError } = await supabase
-                  .from('menu_addon_options')
-                  .select('*')
-                  .eq('menu_item_addon_id', addon.id);
-
-                if (optionsError) {
-                  console.error('Error fetching addon options:', optionsError);
-                }
-
-                return {
-                  id: addon.id,
-                  title: addon.title,
-                  type: addon.type,
-                  options: options || [],
-                };
-              })
-            );
-
-            return {
-              id: item.id,
-              name: item.name,
-              description: item.description || '',
-              price: item.price,
-              old_price: item.old_price || '',
-              weight: item.weight || '',
-              image_url: item.image_url || '',
-              is_visible: item.is_visible ?? true,
-              is_available: item.is_available ?? true,
-              is_vegetarian: item.is_vegetarian,
-              variants,
-              addons: populatedAddons,
-            };
-          })
-        );
+        const populatedItems = items.map(item => ({
+          id: item.id,
+          name: item.name,
+          description: item.description || '',
+          price: item.price,
+          old_price: item.old_price || '',
+          weight: item.weight || '',
+          image_url: item.image_url || '',
+          is_visible: item.is_visible ?? true,
+          is_available: item.is_available ?? true,
+          is_vegetarian: item.is_vegetarian,
+          variants: [],
+          addons: [],
+        }));
 
         return {
           id: category.id,
