@@ -294,7 +294,6 @@ export const getRestaurantById = async (id: string): Promise<RestaurantUI | null
         image_url: item.image_url,
         is_visible: item.is_visible,
         is_available: item.is_available,
-        dietary_type: item.dietary_type, // Make sure dietary_type is included
         variants: variantsResult.data || [],
         addons,
       });
