@@ -81,7 +81,11 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
 }) => {
   const [selectedTab, setSelectedTab] = useState("details");
   const [imagePreview, setImagePreview] = useState<string | null>(activeItem.image_url || null);
-  const [currentDietaryType, setCurrentDietaryType] = useState<"veg" | "non-veg" | null | "">(activeItem.dietary_type || "");
+  // Fix the type definition here to match expected values
+  const [currentDietaryType, setCurrentDietaryType] = useState<"" | "veg" | "non-veg">(
+    activeItem.dietary_type === "veg" ? "veg" : 
+    activeItem.dietary_type === "non-veg" ? "non-veg" : ""
+  );
 
   // Add refs for input fields
   const nameInputRef = useRef<HTMLInputElement>(null);
@@ -94,10 +98,13 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
   useEffect(() => {
     if (nameInputRef.current) {
       nameInputRef.current.select();
-    
-    // Synchronize the dietary type state when activeItem changes
-    setCurrentDietaryType(activeItem.dietary_type || "");
     }
+    
+    // Update dietary type when activeItem changes - with proper type casting
+    const dietaryType = activeItem.dietary_type === "veg" ? "veg" : 
+                        activeItem.dietary_type === "non-veg" ? "non-veg" : "";
+    setCurrentDietaryType(dietaryType);
+    
   }, [activeItem.id, activeItem.dietary_type]);
 
   // Auto-select variant input fields when new variant is added
@@ -120,13 +127,17 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
   };
 
   const handleDietaryTypeChange = (value: string) => {
-    const dietaryType = value === "" ? null : value;
+    // Convert the string value to the appropriate type
+    const dietaryType = value === "" ? "" : value as "" | "veg" | "non-veg";
     setCurrentDietaryType(dietaryType);
+    
+    // For the API call, convert empty string to null
+    const apiDietaryValue = value === "" ? null : value;
     updateMenuItem(
       activeCategoryId,
       activeItem.id,
       "dietary_type",
-      dietaryType
+      apiDietaryValue
     );
   };
 
@@ -262,7 +273,7 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
                 <div className="space-y-2">
                   <Label>Dietary Type</Label>
                   <RadioGroup 
-                    value={currentDietaryType || ""}
+                    value={currentDietaryType}
                     onValueChange={handleDietaryTypeChange}
                     className="flex flex-row space-x-4"
                   >
