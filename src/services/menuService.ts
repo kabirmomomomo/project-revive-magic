@@ -506,7 +506,6 @@ export const saveRestaurantMenu = async (restaurant: RestaurantUI) => {
             is_available: item.is_available !== false,
             category_id: category.id,
             order: itemIndex,
-            dietary_type: item.dietary_type || null,
             updated_at: new Date().toISOString()
           });
         
@@ -526,7 +525,6 @@ export const saveRestaurantMenu = async (restaurant: RestaurantUI) => {
                 is_available: item.is_available !== false,
                 category_id: category.id,
                 order: itemIndex,
-                dietary_type: item.dietary_type || null,
                 updated_at: new Date().toISOString()
               });
             
