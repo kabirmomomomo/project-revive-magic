@@ -81,6 +81,7 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
 }) => {
   const [selectedTab, setSelectedTab] = useState("details");
   const [imagePreview, setImagePreview] = useState<string | null>(activeItem.image_url || null);
+  const [currentDietaryType, setCurrentDietaryType] = useState<"veg" | "non-veg" | null | "">(activeItem.dietary_type || "");
 
   // Add refs for input fields
   const nameInputRef = useRef<HTMLInputElement>(null);
@@ -93,8 +94,11 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
   useEffect(() => {
     if (nameInputRef.current) {
       nameInputRef.current.select();
+    
+    // Synchronize the dietary type state when activeItem changes
+    setCurrentDietaryType(activeItem.dietary_type || "");
     }
-  }, [activeItem.id]);
+  }, [activeItem.id, activeItem.dietary_type]);
 
   // Auto-select variant input fields when new variant is added
   useEffect(() => {
@@ -113,6 +117,17 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
       reader.readAsDataURL(file);
       handleImageUpload(activeCategoryId, activeItem.id, file);
     }
+  };
+
+  const handleDietaryTypeChange = (value: string) => {
+    const dietaryType = value === "" ? null : value;
+    setCurrentDietaryType(dietaryType);
+    updateMenuItem(
+      activeCategoryId,
+      activeItem.id,
+      "dietary_type",
+      dietaryType
+    );
   };
 
   return (
@@ -247,16 +262,8 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
                 <div className="space-y-2">
                   <Label>Dietary Type</Label>
                   <RadioGroup 
-                    value={activeItem.dietary_type || ""}
-                    onValueChange={(value) => {
-                      const dietaryType = value === "" ? null : value;
-                      updateMenuItem(
-                        activeCategoryId,
-                        activeItem.id,
-                        "dietary_type",
-                        dietaryType
-                      );
-                    }}
+                    value={currentDietaryType || ""}
+                    onValueChange={handleDietaryTypeChange}
                     className="flex flex-row space-x-4"
                   >
                     <div className="flex items-center space-x-2">

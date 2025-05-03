@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/components/ui/sonner";
@@ -227,6 +226,8 @@ const MenuEditor = () => {
     field: keyof MenuItemUI,
     value: string | boolean
   ) => {
+    console.log(`Updating menu item: ${itemId}, field: ${field}, value:`, value);
+    
     setRestaurant(prev => {
       const newState = {
         ...prev,
@@ -241,6 +242,10 @@ const MenuEditor = () => {
             : category
         ),
       };
+      
+      // Save changes immediately through the debounced function to ensure persistence
+      debouncedSave(newState);
+      
       return newState;
     });
   };
