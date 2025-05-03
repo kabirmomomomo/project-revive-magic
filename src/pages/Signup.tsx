@@ -1,6 +1,6 @@
 
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -41,9 +41,26 @@ const signupSchema = z
 type SignupFormValues = z.infer<typeof signupSchema>;
 
 const Signup = () => {
-  const { signUp, signInWithGoogle, loading } = useAuth();
+  const { signUp, signInWithGoogle, loading: authLoading, user } = useAuth();
+  const navigate = useNavigate();
   const [isHoveringButton, setIsHoveringButton] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  // Redirect to menu editor if already logged in
+  useEffect(() => {
+    if (user) {
+      navigate('/menu-editor');
+    }
+  }, [user, navigate]);
+
+  // Clear hash fragment if present (from OAuth redirect)
+  useEffect(() => {
+    if (window.location.hash) {
+      console.log('Clearing hash fragment in Signup component');
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
 
   const defaultValues: Partial<SignupFormValues> = {
     name: "",
@@ -59,15 +76,24 @@ const Signup = () => {
   });
 
   const onSubmit = async (data: SignupFormValues) => {
-    await signUp(data.email, data.password, data.name);
+    setLoading(true);
+    try {
+      await signUp(data.email, data.password, data.name);
+    } catch (error) {
+      console.error("Signup error:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
     try {
       await signInWithGoogle();
+      // No need to set googleLoading to false here as the page will redirect
     } catch (error) {
       console.error("Google signup error:", error);
+      setGoogleLoading(false);
     }
   };
 

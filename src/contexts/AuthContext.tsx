@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
@@ -25,6 +24,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Handle hash fragment from OAuth redirect
+    if (window.location.hash) {
+      console.log('Found hash fragment, handling OAuth callback');
+      const { access_token, refresh_token } = parseHashFragment(window.location.hash);
+      if (access_token) {
+        // Clear the hash fragment to prevent parsing it again
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       console.log('Initial session check:', session ? 'Logged in' : 'No session');
       setSession(session);
@@ -40,10 +49,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      
+      // Redirect to menu editor on successful login
+      if (event === 'SIGNED_IN' && session) {
+        navigate('/menu-editor');
+      }
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [navigate]);
+
+  // Helper function to parse hash fragments safely
+  const parseHashFragment = (hash: string) => {
+    try {
+      // Remove the leading '#'
+      const hashWithoutPrefix = hash.substring(1);
+      const params = new URLSearchParams(hashWithoutPrefix);
+      
+      return {
+        access_token: params.get('access_token'),
+        refresh_token: params.get('refresh_token')
+      };
+    } catch (error) {
+      console.error('Error parsing hash fragment:', error);
+      return {
+        access_token: null,
+        refresh_token: null
+      };
+    }
+  };
 
   const signUp = async (email: string, password: string, name: string) => {
     try {
@@ -135,7 +169,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/menu-editor`
+          redirectTo: `${window.location.origin}/login`,
+          skipBrowserRedirect: false
         }
       });
 

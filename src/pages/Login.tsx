@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -18,9 +18,10 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/sonner";
 import { supabase } from "@/lib/supabase";
 import { Separator } from "@/components/ui/separator";
+import { useEffect } from "react";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
@@ -32,13 +33,29 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 const Login = () => {
-  const { signIn, signInWithGoogle } = useAuth();
+  const { signIn, signInWithGoogle, user } = useAuth();
+  const navigate = useNavigate();
   const [isHoveringButton, setIsHoveringButton] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showResetPassword, setShowResetPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
   const [resetLoading, setResetLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+
+  // Redirect to menu editor if already logged in
+  useEffect(() => {
+    if (user) {
+      navigate('/menu-editor');
+    }
+  }, [user, navigate]);
+
+  // Clear hash fragment if present (from OAuth redirect)
+  useEffect(() => {
+    if (window.location.hash) {
+      console.log('Clearing hash fragment in Login component');
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
 
   const defaultValues: Partial<LoginFormValues> = {
     email: "",
@@ -65,8 +82,10 @@ const Login = () => {
     setGoogleLoading(true);
     try {
       await signInWithGoogle();
+      // No need to set googleLoading to false here as the page will redirect
     } catch (error) {
       console.error("Google login error:", error);
+      setGoogleLoading(false);
     }
   };
 
