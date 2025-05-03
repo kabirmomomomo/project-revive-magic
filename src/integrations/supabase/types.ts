@@ -258,10 +258,10 @@ export type Database = {
           category_id: string
           created_at: string | null
           description: string | null
-          dietary_type: string | null
           id: string
           image_url: string | null
           is_available: boolean | null
+          is_vegetarian: boolean | null
           is_visible: boolean | null
           name: string
           old_price: string | null
@@ -274,10 +274,10 @@ export type Database = {
           category_id: string
           created_at?: string | null
           description?: string | null
-          dietary_type?: string | null
           id: string
           image_url?: string | null
           is_available?: boolean | null
+          is_vegetarian?: boolean | null
           is_visible?: boolean | null
           name: string
           old_price?: string | null
@@ -290,10 +290,10 @@ export type Database = {
           category_id?: string
           created_at?: string | null
           description?: string | null
-          dietary_type?: string | null
           id?: string
           image_url?: string | null
           is_available?: boolean | null
+          is_vegetarian?: boolean | null
           is_visible?: boolean | null
           name?: string
           old_price?: string | null
