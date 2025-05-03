@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -81,6 +82,7 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
 }) => {
   const [selectedTab, setSelectedTab] = useState("details");
   const [imagePreview, setImagePreview] = useState<string | null>(activeItem.image_url || null);
+  const [dietaryType, setDietaryType] = useState<string>(activeItem.dietary_type || "");
 
   // Add refs for input fields
   const nameInputRef = useRef<HTMLInputElement>(null);
@@ -88,6 +90,11 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
   const priceInputRef = useRef<HTMLInputElement>(null);
   const variantNameInputRef = useRef<HTMLInputElement>(null);
   const variantPriceInputRef = useRef<HTMLInputElement>(null);
+
+  // Update state when activeItem changes
+  useEffect(() => {
+    setDietaryType(activeItem.dietary_type || "");
+  }, [activeItem.dietary_type]);
 
   // Auto-select input fields when component mounts or when new item is added
   useEffect(() => {
@@ -113,6 +120,12 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
       reader.readAsDataURL(file);
       handleImageUpload(activeCategoryId, activeItem.id, file);
     }
+  };
+
+  const handleDietaryTypeChange = (value: string) => {
+    setDietaryType(value);
+    const dietaryType = value === "" ? null : value;
+    updateMenuItem(activeCategoryId, activeItem.id, "dietary_type", dietaryType);
   };
 
   return (
@@ -247,16 +260,8 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
                 <div className="space-y-2">
                   <Label>Dietary Type</Label>
                   <RadioGroup 
-                    value={activeItem.dietary_type || ""}
-                    onValueChange={(value) => {
-                      const dietaryType = value === "" ? null : value;
-                      updateMenuItem(
-                        activeCategoryId,
-                        activeItem.id,
-                        "dietary_type",
-                        dietaryType
-                      );
-                    }}
+                    value={dietaryType}
+                    onValueChange={handleDietaryTypeChange}
                     className="flex flex-row space-x-4"
                   >
                     <div className="flex items-center space-x-2">
