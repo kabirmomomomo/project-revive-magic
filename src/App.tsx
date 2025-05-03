@@ -1,7 +1,6 @@
 
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
@@ -17,13 +16,21 @@ import { OrderProvider } from "./contexts/OrderContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ThankYou from "./pages/ThankYou";
 import PaymentPage from "./pages/PaymentPage";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 const queryClient = new QueryClient();
+
+// Create a wrapper component that provides the tooltip context
+const TooltipProviderWrapper = ({ children }: { children: React.ReactNode }) => (
+  <TooltipProvider>
+    {children}
+  </TooltipProvider>
+);
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <TooltipProvider>
+      <TooltipProviderWrapper>
         <Toaster />
         <Sonner />
         <Routes>
@@ -81,7 +88,7 @@ const App = () => (
           />
           <Route path="*" element={<NotFound />} />
         </Routes>
-      </TooltipProvider>
+      </TooltipProviderWrapper>
     </AuthProvider>
   </QueryClientProvider>
 );
