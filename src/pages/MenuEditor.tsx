@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/components/ui/sonner";
@@ -241,8 +240,14 @@ const MenuEditor = () => {
             : category
         ),
       };
+      
+      // Save changes immediately through the debounced function
+      debouncedSave(newState);
+      
       return newState;
     });
+    
+    console.log(`Updating menu item ${itemId} with field: ${String(field)} and value: ${value}`);
   };
 
   const deleteMenuItem = (categoryId: string, itemId: string) => {
