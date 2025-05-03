@@ -243,20 +243,21 @@ const MenuEditor = () => {
             : category
         ),
       };
+      
+      // Save changes immediately if dietary_type is changed
+      if (field === "dietary_type") {
+        console.log(`Updated dietary_type for item ${itemId} to ${value}`);
+        // Initiate save to database
+        setTimeout(() => {
+          saveMenuMutation.mutate(newState);
+        }, 100);
+      } else {
+        // For other fields, use the debounced save
+        debouncedSave(newState);
+      }
+      
       return newState;
     });
-    
-    // Log the dietary type after updating
-    if (field === "dietary_type") {
-      console.log(`Updated dietary_type for item ${itemId} to ${value}`);
-      // Get the updated item to verify
-      setTimeout(() => {
-        const updatedItem = restaurant.categories
-          .find(c => c.id === categoryId)
-          ?.items.find(i => i.id === itemId);
-        console.log("Updated item state:", updatedItem);
-      }, 100);
-    }
   };
 
   const deleteMenuItem = (categoryId: string, itemId: string) => {

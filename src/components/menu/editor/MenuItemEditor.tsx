@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -131,7 +132,9 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
     console.log(`Set dietary type to: ${value}, activeItem now shows: ${activeItem.dietary_type}`);
     
     // Immediately save the menu to persist the change
-    handleSaveMenu();
+    setTimeout(() => {
+      handleSaveMenu();
+    }, 100);
   };
 
   return (
@@ -201,7 +204,7 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
                   <Textarea
                     id="item-description"
                     ref={descriptionInputRef}
-                    value={activeItem.description}
+                    value={activeItem.description || ''}
                     onChange={(e) =>
                       updateMenuItem(
                         activeCategoryId,

@@ -501,7 +501,7 @@ export const saveRestaurantMenu = async (restaurant: RestaurantUI) => {
           .upsert({
             id: item.id,
             name: item.name,
-            description: item.description,
+            description: item.description || null,
             price: item.price,
             old_price: item.old_price || null,
             weight: item.weight || null,
@@ -526,7 +526,7 @@ export const saveRestaurantMenu = async (restaurant: RestaurantUI) => {
               .upsert({
                 id: item.id,
                 name: item.name,
-                description: item.description,
+                description: item.description || null,
                 price: item.price,
                 old_price: item.old_price || null,
                 weight: item.weight || null,
