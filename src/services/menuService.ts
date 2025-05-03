@@ -1,6 +1,51 @@
+import { supabase } from '@/lib/supabase';
 import { v4 as uuidv4 } from 'uuid';
-import { supabase } from "@/lib/supabase";
-import { CategoryType, MenuCategory, MenuItem, Restaurant } from '@/types/menu';
+import { toast } from '@/components/ui/sonner';
+import { handleRelationDoesNotExistError } from '@/lib/setupDatabase';
+import { createClient } from '@supabase/supabase-js';
+import { optimizeImage } from '@/lib/imageOptimization';
+import { CategoryType } from '@/types/menu';
+
+// Type definitions for UI
+export interface MenuItemUI {
+  id: string;
+  name: string;
+  description: string;
+  price: string;
+  old_price?: string;
+  weight?: string;
+  image_url?: string;
+  is_visible?: boolean;
+  is_available?: boolean;
+  variants?: MenuItemVariantUI[];
+  addons?: MenuItemAddonUI[];
+}
+
+export interface MenuItemVariantUI {
+  id: string;
+  name: string;
+  price: string;
+}
+
+export interface MenuItemAddonUI {
+  id: string;
+  title: string;
+  type: 'Single choice' | 'Multiple choice';
+  options: MenuAddonOptionUI[];
+}
+
+export interface MenuAddonOptionUI {
+  id: string;
+  name: string;
+  price: string;
+}
+
+export interface MenuCategoryUI {
+  id: string;
+  name: string;
+  items: MenuItemUI[];
+  type?: CategoryType;
+}
 
 export interface RestaurantUI {
   id: string;
@@ -18,383 +63,666 @@ export interface RestaurantUI {
   upi_id?: string;
 }
 
-export interface MenuCategoryUI {
-  id: string;
-  name: string;
-  items: MenuItemUI[];
-  icon?: string;
-  type?: CategoryType;
-}
+// Add cache configuration
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const cache = new Map<string, { data: any; timestamp: number }>();
 
-export interface MenuItemUI {
-  id: string;
-  name: string;
-  description: string;
-  price: string;
-  old_price?: string;
-  weight?: string;
-  image_url?: string;
-  is_visible: boolean;
-  is_available: boolean;
-  is_vegetarian: boolean | null;
-  variants?: MenuItemVariantUI[];
-  addons?: MenuItemAddonUI[];
-}
-
-export interface MenuItemVariantUI {
-  id: string;
-  name: string;
-  price: string;
-}
-
-export interface MenuItemAddonUI {
-  id: string;
-  title: string;
-  type: string;
-  options: MenuAddonOptionUI[];
-}
-
-export interface MenuAddonOptionUI {
-  id: string;
-  name: string;
-  price: string;
-}
-
-export const generateStableRestaurantId = (userId: string): string => {
-  const baseString = `restaurant-${userId}`;
-  let hash = 0;
-  for (let i = 0; i < baseString.length; i++) {
-    const char = baseString.charCodeAt(i);
-    hash = (hash << 5) - hash + char;
-    hash = hash & hash; // Convert to 32bit integer
+// Add cache helper functions
+const getFromCache = (key: string) => {
+  const cached = cache.get(key);
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    return cached.data;
   }
-  const stableId = `stable-${Math.abs(hash).toString(16)}`;
-  return stableId;
+  return null;
+};
+
+const setCache = (key: string, data: any) => {
+  cache.set(key, { data, timestamp: Date.now() });
+};
+
+export const generateStableRestaurantId = (userId: string | undefined) => {
+  if (!userId) {
+    return uuidv4();
+  }
+  
+  return userId;
+};
+
+export const uploadItemImage = async (file: File, itemId: string): Promise<string | null> => {
+  try {
+    // Optimize the image before uploading
+    const optimizedFile = await optimizeImage(file);
+    
+    const fileExt = optimizedFile.name.split('.').pop();
+    const fileName = `${itemId}.${fileExt}`;
+    const filePath = `${fileName}`;
+    
+    const { data, error } = await supabase.storage
+      .from('menu-images')
+      .upload(filePath, optimizedFile, {
+        cacheControl: '3600',
+        upsert: true
+      });
+    
+    if (error) {
+      console.error('Error uploading image:', error);
+      toast.error('Failed to upload image');
+      return null;
+    }
+    
+    const { data: { publicUrl } } = supabase.storage
+      .from('menu-images')
+      .getPublicUrl(filePath);
+    
+    return publicUrl;
+  } catch (error) {
+    console.error('Error in uploadItemImage:', error);
+    toast.error('Failed to upload image');
+    return null;
+  }
+};
+
+export const createRestaurant = async (name: string, description: string) => {
+  try {
+    const user = await supabase.auth.getUser();
+    const userId = user.data.user?.id;
+    
+    const newRestaurant = {
+      id: generateStableRestaurantId(userId),
+      name,
+      description,
+      user_id: userId || null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    
+    const { data, error } = await supabase
+      .from('restaurants')
+      .upsert(newRestaurant)
+      .select()
+      .single();
+
+    if (error) {
+      if (await handleRelationDoesNotExistError(error)) {
+        return createRestaurant(name, description);
+      }
+      throw error;
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Error creating restaurant:', error);
+    toast.error('Failed to create restaurant in database');
+    throw error;
+  }
+};
+
+export const getRestaurantById = async (id: string): Promise<RestaurantUI | null> => {
+  const cacheKey = `restaurant_${id}`;
+  const cachedData = getFromCache(cacheKey);
+  
+  if (cachedData) {
+    return cachedData;
+  }
+
+  const { data: restaurant, error } = await supabase
+    .from('restaurants')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  if (!restaurant) {
+    return null;
+  }
+
+  // Fetch categories with pagination
+  const { data: categories, error: categoriesError } = await supabase
+    .from('menu_categories')
+    .select('*')
+    .eq('restaurant_id', id)
+    .order('order', { ascending: true });
+
+  if (categoriesError) {
+    throw categoriesError;
+  }
+
+  const categoriesWithItems: MenuCategoryUI[] = [];
+
+  // Fetch items for each category with pagination
+  for (const category of categories || []) {
+    const { data: items, error: itemsError } = await supabase
+      .from('menu_items')
+      .select('*')
+      .eq('category_id', category.id)
+      .order('order', { ascending: true });
+
+    if (itemsError) {
+      if (itemsError.code === 'PGRST116') {
+        const success = await handleRelationDoesNotExistError(itemsError);
+        if (!success) throw itemsError;
+        
+        categoriesWithItems.push({
+          id: category.id,
+          name: category.name,
+          items: [],
+        });
+        continue;
+      }
+      throw itemsError;
+    }
+
+    const menuItems: MenuItemUI[] = [];
+
+    // Fetch variants and addons in parallel for better performance
+    for (const item of items || []) {
+      const [variantsResult, addonMappingsResult] = await Promise.all([
+        supabase
+          .from('menu_item_variants')
+          .select('*')
+          .eq('menu_item_id', item.id)
+          .order('order', { ascending: true }),
+        supabase
+          .from('menu_item_addon_mapping')
+          .select('addon_id')
+          .eq('menu_item_id', item.id)
+      ]);
+
+      if (variantsResult.error && variantsResult.error.code !== 'PGRST116') {
+        throw variantsResult.error;
+      }
+
+      if (addonMappingsResult.error && 'code' in addonMappingsResult.error && addonMappingsResult.error.code !== 'PGRST116') {
+        throw addonMappingsResult.error;
+      }
+
+      const addons: MenuItemAddonUI[] = [];
+      
+      // Fetch addon details in parallel
+      if (addonMappingsResult.data?.length) {
+        for (const mapping of addonMappingsResult.data) {
+          try {
+            // Use direct query with menu_item_addons instead of menu_addons
+            const { data: addon, error: addonError } = await supabase
+              .from('menu_item_addons')
+              .select('*')
+              .eq('id', mapping.addon_id)
+              .single();
+
+            if (addonError) {
+              if (addonError.code !== 'PGRST116') {
+                throw addonError;
+              }
+              continue;
+            }
+
+            if (addon) {
+              const { data: options, error: optionsError } = await supabase
+                .from('menu_addon_options')
+                .select('*')
+                .eq('addon_id', addon.id)
+                .order('order', { ascending: true });
+
+              if (optionsError && optionsError.code !== 'PGRST116') {
+                throw optionsError;
+              }
+
+              addons.push({
+                id: addon.id,
+                title: addon.title,
+                type: addon.type as 'Single choice' | 'Multiple choice',
+                options: options || [],
+              });
+            }
+          } catch (error) {
+            console.error('Error fetching addon details:', error);
+          }
+        }
+      }
+
+      menuItems.push({
+        id: item.id,
+        name: item.name,
+        description: item.description,
+        price: item.price,
+        old_price: item.old_price,
+        weight: item.weight,
+        image_url: item.image_url,
+        is_visible: item.is_visible,
+        is_available: item.is_available,
+        variants: variantsResult.data || [],
+        addons,
+      });
+    }
+
+    categoriesWithItems.push({
+      id: category.id,
+      name: category.name,
+      type: category.type as CategoryType | undefined,
+      items: menuItems,
+    });
+  }
+
+  const result = {
+    ...restaurant,
+    categories: categoriesWithItems,
+  };
+
+  // Cache the result
+  setCache(cacheKey, result);
+
+  return result;
 };
 
 export const getUserRestaurant = async (): Promise<RestaurantUI | null> => {
-  if (!supabase) {
-    console.error("Supabase client is not initialized.");
-    return null;
-  }
-
   try {
-    const { data: user, error: userError } = await supabase.auth.getUser();
-
-    if (userError) {
-      console.error("Error fetching user:", userError);
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      console.log('No authenticated user');
       return null;
     }
-
-    if (!user?.user?.id) {
-      console.warn("No user ID found, meaning no user is logged in.");
-      return null;
-    }
-
-    const userId = user.user.id;
-    const stableId = generateStableRestaurantId(userId);
-
-    const { data: restaurantData, error: restaurantError } = await supabase
-      .from('restaurants')
-      .select('*')
-      .eq('id', stableId)
-      .single();
-
-    if (restaurantError) {
-      console.error("Error fetching restaurant:", restaurantError);
-      return null;
-    }
-
-    if (!restaurantData) {
-      console.log("No restaurant found for the current user, returning null.");
-      return null;
-    }
-
-    const { data: categoriesData, error: categoriesError } = await supabase
-      .from('menu_categories')
-      .select('*')
-      .eq('restaurant_id', restaurantData.id)
-      .order('order');
-
-    if (categoriesError) {
-      console.error("Error fetching categories:", categoriesError);
-      return null;
-    }
-
-    const transformDatabaseItem = (dbItem: any): MenuItemUI => ({
-      id: dbItem.id,
-      name: dbItem.name,
-      description: dbItem.description || '',
-      price: dbItem.price,
-      old_price: dbItem.old_price || '',
-      weight: dbItem.weight || '',
-      image_url: dbItem.image_url || '',
-      is_visible: dbItem.is_visible ?? true,
-      is_available: dbItem.is_available ?? true,
-      is_vegetarian: dbItem.is_vegetarian,
-      variants: [],
-      addons: [],
-    });
-
-    const categories = await Promise.all(
-      categoriesData.map(async (category) => {
-        const { data: itemsData, error: itemsError } = await supabase
-          .from('menu_items')
-          .select('*')
-          .eq('category_id', category.id)
-          .order('order');
-
-        if (itemsError) {
-          console.error("Error fetching menu items:", itemsError);
-          return {
-            id: category.id,
-            name: category.name,
-            items: [],
-          };
-        }
-
-        const items: MenuItemUI[] = itemsData.map(transformDatabaseItem);
-
-        return {
-          id: category.id,
-          name: category.name,
-          items: items,
-          type: category.type as CategoryType | undefined,
-        };
-      })
-    );
-
-    const restaurant: RestaurantUI = {
-      id: restaurantData.id,
-      name: restaurantData.name,
-      description: restaurantData.description || '',
-      categories: categories,
-      image_url: restaurantData.image_url || '',
-      google_review_link: restaurantData.google_review_link || '',
-      location: restaurantData.location || '',
-      phone: restaurantData.phone || '',
-      wifi_password: restaurantData.wifi_password || '',
-      opening_time: restaurantData.opening_time || '',
-      closing_time: restaurantData.closing_time || '',
-      payment_qr_code: restaurantData.payment_qr_code || '',
-      upi_id: restaurantData.upi_id || '',
-    };
-
+    
+    const stableId = generateStableRestaurantId(user.id);
+    
+    const restaurant = await getRestaurantById(stableId);
+    
     return restaurant;
   } catch (error) {
-    console.error("Error in getUserRestaurant:", error);
+    console.error('Error getting user restaurant:', error);
     return null;
   }
 };
 
-export const saveRestaurantMenu = async (restaurant: RestaurantUI): Promise<void> => {
-  if (!supabase) {
-    throw new Error("Supabase client is not initialized.");
-  }
-
+export const getUserRestaurants = async () => {
   try {
-    // Get current user ID for the restaurant user_id field
-    const { data: userData, error: userError } = await supabase.auth.getUser();
-    if (userError) {
-      throw new Error("Failed to get current user ID");
+    const user = await supabase.auth.getUser();
+    
+    if (!user.data.user) {
+      console.log('No authenticated user, returning empty restaurants list');
+      return [];
     }
 
-    const userId = userData.user?.id;
-    if (!userId) {
-      throw new Error("No user ID available");
-    }
+    const { data, error } = await supabase
+      .from('restaurants')
+      .select('*')
+      .eq('user_id', user.data.user.id)
+      .order('created_at', { ascending: false });
 
-    // Upsert restaurant
+    if (error) {
+      if (await handleRelationDoesNotExistError(error)) {
+        return getUserRestaurants();
+      }
+      throw error;
+    }
+    
+    return data || [];
+  } catch (error) {
+    console.error('Error getting user restaurants:', error);
+    toast.error('Failed to fetch your restaurants');
+    return [];
+  }
+};
+
+export const saveRestaurantMenu = async (restaurant: RestaurantUI) => {
+  // Invalidate cache
+  cache.delete(`restaurant_${restaurant.id}`);
+
+  const { id, name, description, categories, image_url, google_review_link, location, phone, wifi_password, opening_time, closing_time, payment_qr_code, upi_id } = restaurant;
+  
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    const userId = user?.id || null;
+    
     const { error: restaurantError } = await supabase
       .from('restaurants')
       .upsert({
-        id: restaurant.id,
-        name: restaurant.name,
-        description: restaurant.description,
-        image_url: restaurant.image_url || null,
-        google_review_link: restaurant.google_review_link || null,
-        location: restaurant.location || null,
-        phone: restaurant.phone || null,
-        wifi_password: restaurant.wifi_password || null,
-        opening_time: restaurant.opening_time || null,
-        closing_time: restaurant.closing_time || null,
-        payment_qr_code: restaurant.payment_qr_code || null,
-        upi_id: restaurant.upi_id || null,
-        user_id: userId
-      }, { onConflict: 'id' });
-
+        id,
+        name,
+        description,
+        image_url,
+        google_review_link,
+        location,
+        phone,
+        wifi_password,
+        opening_time,
+        closing_time,
+        payment_qr_code,
+        upi_id,
+        user_id: userId,
+        updated_at: new Date().toISOString()
+      });
+    
     if (restaurantError) {
-      console.error("Error upserting restaurant:", restaurantError);
+      if (await handleRelationDoesNotExistError(restaurantError)) {
+        return saveRestaurantMenu(restaurant);
+      }
       throw restaurantError;
     }
-
-    // Loop through categories
-    for (const category of restaurant.categories) {
-      // Upsert category
+    
+    const { data: existingCategories, error: getCategoriesError } = await supabase
+      .from('menu_categories')
+      .select('id')
+      .eq('restaurant_id', id);
+    
+    if (getCategoriesError) {
+      if (await handleRelationDoesNotExistError(getCategoriesError)) {
+      } else {
+        throw getCategoriesError;
+      }
+    }
+    
+    const newCategoryIds = categories.map(c => c.id);
+    const categoriesToDelete = existingCategories
+      ?.filter(c => !newCategoryIds.includes(c.id))
+      .map(c => c.id) || [];
+    
+    if (categoriesToDelete.length > 0) {
+      const { error: deleteCategoriesError } = await supabase
+        .from('menu_categories')
+        .delete()
+        .in('id', categoriesToDelete);
+      
+      if (deleteCategoriesError && deleteCategoriesError.code !== 'PGRST116') {
+        throw deleteCategoriesError;
+      }
+    }
+    
+    for (let [index, category] of categories.entries()) {
       const { error: categoryError } = await supabase
         .from('menu_categories')
         .upsert({
           id: category.id,
-          restaurant_id: restaurant.id,
           name: category.name,
-          type: category.type || null,
-        }, { onConflict: 'id' });
-
+          restaurant_id: id,
+          order: index,
+          type: category.type || null, // Ensure type is saved to database
+          updated_at: new Date().toISOString()
+        });
+      
       if (categoryError) {
-        console.error("Error upserting category:", categoryError);
-        throw categoryError;
+        if (await handleRelationDoesNotExistError(categoryError)) {
+          const { error: retryError } = await supabase
+            .from('menu_categories')
+            .upsert({
+              id: category.id,
+              name: category.name,
+              restaurant_id: id,
+              order: index,
+              type: category.type || null, // Ensure type is saved to database
+              updated_at: new Date().toISOString()
+            });
+          
+          if (retryError) throw retryError;
+        } else {
+          throw categoryError;
+        }
       }
-
-      // Loop through items
-      for (const [index, item] of category.items.entries()) {
-        // Insert or update menu item
+      
+      const { data: existingItems, error: getItemsError } = await supabase
+        .from('menu_items')
+        .select('id')
+        .eq('category_id', category.id);
+      
+      if (getItemsError) {
+        if (await handleRelationDoesNotExistError(getItemsError)) {
+        } else {
+          throw getItemsError;
+        }
+      }
+      
+      const newItemIds = category.items.map(i => i.id);
+      const itemsToDelete = existingItems
+        ?.filter(i => !newItemIds.includes(i.id))
+        .map(i => i.id) || [];
+      
+      if (itemsToDelete.length > 0) {
+        const { error: deleteItemsError } = await supabase
+          .from('menu_items')
+          .delete()
+          .in('id', itemsToDelete);
+        
+        if (deleteItemsError && deleteItemsError.code !== 'PGRST116') {
+          throw deleteItemsError;
+        }
+      }
+      
+      for (let [itemIndex, item] of category.items.entries()) {
         const { error: itemError } = await supabase
           .from('menu_items')
           .upsert({
             id: item.id,
-            category_id: category.id,
             name: item.name,
             description: item.description,
             price: item.price,
             old_price: item.old_price || null,
             weight: item.weight || null,
             image_url: item.image_url || null,
-            is_visible: item.is_visible,
-            is_available: item.is_available,
-            is_vegetarian: item.is_vegetarian,
-            order: index,
-          }, { onConflict: 'id' });
-
+            is_visible: item.is_visible !== false,
+            is_available: item.is_available !== false,
+            category_id: category.id,
+            order: itemIndex,
+            updated_at: new Date().toISOString()
+          });
+        
         if (itemError) {
-          console.error("Error upserting menu item:", itemError);
-          throw itemError;
+          if (await handleRelationDoesNotExistError(itemError)) {
+            const { error: retryError } = await supabase
+              .from('menu_items')
+              .upsert({
+                id: item.id,
+                name: item.name,
+                description: item.description,
+                price: item.price,
+                old_price: item.old_price || null,
+                weight: item.weight || null,
+                image_url: item.image_url || null,
+                is_visible: item.is_visible !== false,
+                is_available: item.is_available !== false,
+                category_id: category.id,
+                order: itemIndex,
+                updated_at: new Date().toISOString()
+              });
+            
+            if (retryError) throw retryError;
+          } else {
+            throw itemError;
+          }
+        }
+
+        if (item.variants && item.variants.length > 0) {
+          const { data: existingVariants, error: getVariantsError } = await supabase
+            .from('menu_item_variants')
+            .select('id')
+            .eq('menu_item_id', item.id);
+          
+          if (getVariantsError && getVariantsError.code !== 'PGRST116') {
+            throw getVariantsError;
+          }
+          
+          const newVariantIds = item.variants.map(v => v.id);
+          const variantsToDelete = existingVariants
+            ?.filter(v => !newVariantIds.includes(v.id))
+            .map(v => v.id) || [];
+          
+          if (variantsToDelete.length > 0) {
+            const { error: deleteVariantsError } = await supabase
+              .from('menu_item_variants')
+              .delete()
+              .in('id', variantsToDelete);
+            
+            if (deleteVariantsError && deleteVariantsError.code !== 'PGRST116') {
+              throw deleteVariantsError;
+            }
+          }
+          
+          for (let [variantIndex, variant] of item.variants.entries()) {
+            const { error: variantError } = await supabase
+              .from('menu_item_variants')
+              .upsert({
+                id: variant.id,
+                menu_item_id: item.id,
+                name: variant.name,
+                price: variant.price,
+                order: variantIndex,
+                updated_at: new Date().toISOString()
+              });
+            
+            if (variantError && variantError.code !== 'PGRST116') {
+              throw variantError;
+            }
+          }
+        } else {
+          const { error: deleteAllVariantsError } = await supabase
+            .from('menu_item_variants')
+            .delete()
+            .eq('menu_item_id', item.id);
+          
+          if (deleteAllVariantsError && deleteAllVariantsError.code !== 'PGRST116') {
+            throw deleteAllVariantsError;
+          }
+        }
+
+        if (item.addons && item.addons.length > 0) {
+          const { data: existingMappings, error: getMappingsError } = await supabase
+            .from('menu_item_addon_mapping')
+            .select('addon_id')
+            .eq('menu_item_id', item.id);
+          
+          if (getMappingsError && getMappingsError.code !== 'PGRST116') {
+            throw getMappingsError;
+          }
+          
+          const existingAddonIds = existingMappings?.map(m => m.addon_id) || [];
+          const newAddonIds = item.addons.map(a => a.id);
+          
+          const addonMappingsToDelete = existingAddonIds.filter(id => !newAddonIds.includes(id));
+          
+          if (addonMappingsToDelete.length > 0) {
+            const { error: deleteMappingsError } = await supabase
+              .from('menu_item_addon_mapping')
+              .delete()
+              .eq('menu_item_id', item.id)
+              .in('addon_id', addonMappingsToDelete);
+            
+            if (deleteMappingsError && deleteMappingsError.code !== 'PGRST116') {
+              throw deleteMappingsError;
+            }
+          }
+          
+          for (const addon of item.addons) {
+            const { error: addonError } = await supabase
+              .from('menu_item_addons')
+              .upsert({
+                id: addon.id,
+                title: addon.title,
+                type: addon.type,
+                updated_at: new Date().toISOString()
+              });
+            
+            if (addonError && addonError.code !== 'PGRST116') {
+              throw addonError;
+            }
+            
+            if (!existingAddonIds.includes(addon.id)) {
+              const { error: mappingError } = await supabase
+                .from('menu_item_addon_mapping')
+                .upsert({
+                  id: uuidv4(),
+                  menu_item_id: item.id,
+                  addon_id: addon.id
+                });
+              
+              if (mappingError && mappingError.code !== 'PGRST116') {
+                throw mappingError;
+              }
+            }
+            
+            if (addon.options && addon.options.length > 0) {
+              const { data: existingOptions, error: getOptionsError } = await supabase
+                .from('menu_addon_options')
+                .select('id')
+                .eq('addon_id', addon.id);
+              
+              if (getOptionsError && getOptionsError.code !== 'PGRST116') {
+                throw getOptionsError;
+              }
+              
+              const existingOptionIds = existingOptions?.map(o => o.id) || [];
+              const newOptionIds = addon.options.map(o => o.id);
+              
+              const optionsToDelete = existingOptionIds.filter(id => !newOptionIds.includes(id));
+              
+              if (optionsToDelete.length > 0) {
+                const { error: deleteOptionsError } = await supabase
+                  .from('menu_addon_options')
+                  .delete()
+                  .in('id', optionsToDelete);
+                
+                if (deleteOptionsError && deleteOptionsError.code !== 'PGRST116') {
+                  throw deleteOptionsError;
+                }
+              }
+              
+              for (let [optionIndex, option] of addon.options.entries()) {
+                const { error: optionError } = await supabase
+                  .from('menu_addon_options')
+                  .upsert({
+                    id: option.id,
+                    addon_id: addon.id,
+                    name: option.name,
+                    price: option.price,
+                    order: optionIndex,
+                    updated_at: new Date().toISOString()
+                  });
+                
+                if (optionError && optionError.code !== 'PGRST116') {
+                  throw optionError;
+                }
+              }
+            } else {
+              const { error: deleteAllOptionsError } = await supabase
+                .from('menu_addon_options')
+                .delete()
+                .eq('addon_id', addon.id);
+              
+              if (deleteAllOptionsError && deleteAllOptionsError.code !== 'PGRST116') {
+                throw deleteAllOptionsError;
+              }
+            }
+          }
+        } else {
+          const { error: deleteAllMappingsError } = await supabase
+            .from('menu_item_addon_mapping')
+            .delete()
+            .eq('menu_item_id', item.id);
+          
+          if (deleteAllMappingsError && deleteAllMappingsError.code !== 'PGRST116') {
+            throw deleteAllMappingsError;
+          }
         }
       }
     }
+    
+    toast.success("Menu saved successfully to database!");
+    return { success: true, isLocalOnly: false };
   } catch (error) {
-    console.error("Error in saveRestaurantMenu:", error);
+    console.error('Error saving restaurant menu:', error);
+    
+    const setupSucceeded = await handleRelationDoesNotExistError(error);
+    
+    if (setupSucceeded) {
+      toast.info('Created database tables, retrying save operation...');
+      return saveRestaurantMenu(restaurant);
+    }
+    
+    toast.error('Failed to save menu to database', {
+      description: 'Please try again or check your connection.'
+    });
+    
     throw error;
-  }
-};
-
-export const uploadItemImage = async (file: File, itemId: string): Promise<string | null> => {
-  try {
-    const filePath = `item-images/${itemId}/${file.name}`;
-
-    const { data, error } = await supabase.storage
-      .from('menu-images')
-      .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: false
-      });
-
-    if (error) {
-      console.error("Error uploading image:", error);
-      return null;
-    }
-
-    const { data: { publicUrl } } = supabase.storage
-      .from('menu-images')
-      .getPublicUrl(filePath);
-      
-    return publicUrl;
-  } catch (error) {
-    console.error("Error during image upload:", error);
-    return null;
-  }
-};
-
-export const getRestaurantById = async (id: string): Promise<Restaurant | null> => {
-  try {
-    if (!supabase) {
-      console.error("Supabase client is not initialized.");
-      return null;
-    }
-
-    const { data: restaurant, error: restaurantError } = await supabase
-      .from('restaurants')
-      .select('*')
-      .eq('id', id)
-      .single();
-
-    if (restaurantError) {
-      console.error('Error fetching restaurant:', restaurantError);
-      return null;
-    }
-
-    if (!restaurant) {
-      console.log('Restaurant not found');
-      return null;
-    }
-
-    const { data: dbCategories, error: categoriesError } = await supabase
-      .from('menu_categories')
-      .select('*')
-      .eq('restaurant_id', id)
-      .order('order');
-
-    if (categoriesError) {
-      console.error('Error fetching categories:', categoriesError);
-      return null;
-    }
-
-    const categories = await Promise.all(
-      dbCategories.map(async (category) => {
-        const { data: items, error: itemsError } = await supabase
-          .from('menu_items')
-          .select('*')
-          .eq('category_id', category.id)
-          .order('order');
-
-        if (itemsError) {
-          console.error('Error fetching menu items:', itemsError);
-          return {
-            id: category.id,
-            name: category.name,
-            type: category.type as CategoryType | undefined,
-            items: [],
-          };
-        }
-
-        const populatedItems = items.map(item => ({
-          id: item.id,
-          name: item.name,
-          description: item.description || '',
-          price: item.price,
-          old_price: item.old_price || '',
-          weight: item.weight || '',
-          image_url: item.image_url || '',
-          is_visible: item.is_visible ?? true,
-          is_available: item.is_available ?? true,
-          is_vegetarian: item.is_vegetarian,
-          variants: [],
-          addons: [],
-        }));
-
-        return {
-          id: category.id,
-          name: category.name,
-          type: category.type as CategoryType | undefined,
-          items: populatedItems,
-        };
-      })
-    );
-
-    return {
-      id: restaurant.id,
-      name: restaurant.name,
-      description: restaurant.description || '',
-      categories: categories,
-      image_url: restaurant.image_url || '',
-      google_review_link: restaurant.google_review_link || '',
-      location: restaurant.location || '',
-      phone: restaurant.phone || '',
-      wifi_password: restaurant.wifi_password || '',
-      opening_time: restaurant.opening_time || '',
-      closing_time: restaurant.closing_time || '',
-    };
-  } catch (error) {
-    console.error('Error in getRestaurantById:', error);
-    return null;
   }
 };
