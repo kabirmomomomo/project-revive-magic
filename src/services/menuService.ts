@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Restaurant, MenuCategory, MenuItem, MenuItemVariant, MenuItemAddon, MenuAddonOption } from '@/types/menu';
 import { v4 as uuidv4 } from 'uuid';
@@ -114,10 +113,19 @@ export async function getRestaurantById(id: string): Promise<Restaurant | null> 
           })
         );
 
-        // Return the category with its processed items
+        // Convert the category type to the proper union type
+        let categoryType: CategoryType | null = null;
+        if (category.type) {
+          if (['food', 'liquor', 'beverages', 'revive', 'all'].includes(category.type)) {
+            categoryType = category.type as CategoryType;
+          }
+        }
+
+        // Return the category with its processed items and properly typed category type
         return {
           ...category,
-          items: processedItems
+          items: processedItems,
+          type: categoryType
         };
       })
     );
@@ -437,6 +445,11 @@ export const saveRestaurantMenu = async (restaurant: RestaurantUI): Promise<void
     for (let i = 0; i < restaurant.categories.length; i++) {
       const category = restaurant.categories[i];
       
+      // Make sure the category type is valid before saving it to the database
+      const categoryType = category.type && ['food', 'liquor', 'beverages', 'revive', 'all'].includes(category.type) 
+        ? category.type 
+        : null;
+      
       // Update or insert category
       const { error: categoryError } = await supabase
         .from('menu_categories')
@@ -445,7 +458,7 @@ export const saveRestaurantMenu = async (restaurant: RestaurantUI): Promise<void
           name: category.name,
           restaurant_id: restaurant.id,
           order: i,
-          type: category.type
+          type: categoryType
         });
       
       if (categoryError) {
@@ -465,9 +478,8 @@ export const saveRestaurantMenu = async (restaurant: RestaurantUI): Promise<void
 };
 
 export const generateStableRestaurantId = (userId: string): string => {
-  // Create a deterministic UUID based on user ID to ensure the same restaurant ID
-  // is generated every time for the same user
-  return uuidv4(); // Simple uuidv4 generation without options
+  // Create a deterministic UUID based on user ID
+  return uuidv4(); // Using uuidv4 without options
 };
 
 export const uploadItemImage = async (file: File, itemId: string): Promise<string | null> => {

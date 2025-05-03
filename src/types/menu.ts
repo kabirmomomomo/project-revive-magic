@@ -40,7 +40,7 @@ export interface MenuCategory {
   name: string;
   items: MenuItem[];
   icon?: string;
-  type?: CategoryType;
+  type?: CategoryType | null;
 }
 
 export interface Restaurant {
