@@ -12,6 +12,7 @@ interface AuthContextType {
   supabase: typeof supabase;
   signUp: (email: string, password: string, name: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -126,6 +127,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const signInWithGoogle = async () => {
+    try {
+      setLoading(true);
+      console.log('Attempting to sign in with Google');
+      
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/menu-editor`
+        }
+      });
+
+      if (error) {
+        console.error('Supabase Google signin error:', error);
+        throw error;
+      }
+      
+      // No need for navigation here as the OAuth process will handle redirection
+    } catch (error) {
+      console.error('Error signing in with Google:', error);
+      
+      if (error instanceof Error) {
+        if (error.message.includes('fetch')) {
+          toast.error('Network error. Please check your connection and try again.');
+        } else {
+          toast.error(error.message);
+        }
+      } else {
+        toast.error('Failed to sign in with Google. Please try again later.');
+      }
+      setLoading(false);
+    }
+  };
+
   const signOut = async () => {
     try {
       setLoading(true);
@@ -156,6 +191,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       supabase,
       signUp, 
       signIn, 
+      signInWithGoogle,
       signOut 
     }}>
       {children}
