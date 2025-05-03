@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Restaurant, MenuCategory, MenuItem, MenuItemVariant, MenuItemAddon, MenuAddonOption } from '@/types/menu';
 import { v4 as uuidv4 } from 'uuid';
@@ -12,6 +13,8 @@ export interface MenuCategoryUI extends Omit<MenuCategory, 'items'> {
 }
 export interface RestaurantUI extends Omit<Restaurant, 'categories'> {
   categories: MenuCategoryUI[];
+  payment_qr_code?: string;
+  upi_id?: string;
 }
 
 export async function getRestaurantById(id: string): Promise<Restaurant | null> {
@@ -93,11 +96,17 @@ export async function getRestaurantById(id: string): Promise<Restaurant | null> 
               }
             }
 
+            // Convert string dietary_type to proper union type
+            const dietaryType = item.dietary_type === 'veg' ? 'veg' : 
+                               item.dietary_type === 'non-veg' ? 'non-veg' : 
+                               null;
+
             // Return the processed item with variants and addons
             return {
               ...item,
               variants,
-              addons
+              addons,
+              dietary_type: dietaryType
             };
           })
         );
@@ -350,3 +359,139 @@ export async function createNewMenuItem(categoryId: string): Promise<MenuItemUI 
     id: itemId
   };
 }
+
+// Add the missing functions
+export const getUserRestaurant = async (): Promise<RestaurantUI | null> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) return null;
+  
+  try {
+    const { data, error } = await supabase
+      .from('restaurants')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+    
+    if (error || !data) {
+      console.error('Error fetching restaurant:', error);
+      return null;
+    }
+    
+    const restaurant = await getRestaurantById(data.id);
+    return restaurant as RestaurantUI;
+  } catch (error) {
+    console.error('Error in getUserRestaurant:', error);
+    return null;
+  }
+};
+
+export const saveRestaurantMenu = async (restaurant: RestaurantUI): Promise<void> => {
+  try {
+    // Update restaurant basic info
+    const { error: restaurantError } = await supabase
+      .from('restaurants')
+      .update({
+        name: restaurant.name,
+        description: restaurant.description,
+        image_url: restaurant.image_url,
+        google_review_link: restaurant.google_review_link,
+        location: restaurant.location,
+        phone: restaurant.phone,
+        wifi_password: restaurant.wifi_password,
+        opening_time: restaurant.opening_time,
+        closing_time: restaurant.closing_time,
+        payment_qr_code: restaurant.payment_qr_code,
+        upi_id: restaurant.upi_id
+      })
+      .eq('id', restaurant.id);
+    
+    if (restaurantError) {
+      console.error('Error updating restaurant:', restaurantError);
+      throw new Error(`Failed to update restaurant: ${restaurantError.message}`);
+    }
+    
+    // Get existing categories to find ones that need to be deleted
+    const { data: existingCategories } = await supabase
+      .from('menu_categories')
+      .select('id')
+      .eq('restaurant_id', restaurant.id);
+    
+    const existingCategoryIds = existingCategories?.map(c => c.id) || [];
+    const newCategoryIds = restaurant.categories.map(c => c.id);
+    
+    // Delete categories that no longer exist
+    const categoriesToDelete = existingCategoryIds.filter(id => !newCategoryIds.includes(id));
+    
+    if (categoriesToDelete.length > 0) {
+      await supabase
+        .from('menu_categories')
+        .delete()
+        .in('id', categoriesToDelete);
+    }
+    
+    // Update or create categories and their items
+    for (let i = 0; i < restaurant.categories.length; i++) {
+      const category = restaurant.categories[i];
+      
+      // Update or insert category
+      const { error: categoryError } = await supabase
+        .from('menu_categories')
+        .upsert({
+          id: category.id,
+          name: category.name,
+          restaurant_id: restaurant.id,
+          order: i,
+          type: category.type
+        });
+      
+      if (categoryError) {
+        console.error(`Error upserting category ${category.id}:`, categoryError);
+        continue;
+      }
+      
+      // Handle items within the category
+      for (const item of category.items) {
+        await saveMenuItem(category.id, item);
+      }
+    }
+  } catch (error) {
+    console.error('Error in saveRestaurantMenu:', error);
+    throw error;
+  }
+};
+
+export const generateStableRestaurantId = (userId: string): string => {
+  // Create a deterministic UUID based on user ID to ensure the same restaurant ID
+  // is generated every time for the same user
+  const namespace = '6ba7b810-9dad-11d1-80b4-00c04fd430c8'; // Arbitrary UUID namespace
+  const id = uuidv4({ name: userId, namespace });
+  return id;
+};
+
+export const uploadItemImage = async (file: File, itemId: string): Promise<string | null> => {
+  try {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${itemId}.${fileExt}`;
+    const filePath = `menu-items/${fileName}`;
+    
+    const { error: uploadError } = await supabase.storage
+      .from('menu-images')
+      .upload(filePath, file, { upsert: true });
+    
+    if (uploadError) {
+      console.error('Error uploading image:', uploadError);
+      return null;
+    }
+    
+    const { data } = supabase.storage
+      .from('menu-images')
+      .getPublicUrl(filePath);
+    
+    return data.publicUrl;
+  } catch (error) {
+    console.error('Error in uploadItemImage:', error);
+    return null;
+  }
+};
+

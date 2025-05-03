@@ -11,7 +11,7 @@
     is_available?: boolean;
     variants?: MenuItemVariant[];
     addons?: MenuItemAddon[];
-    dietary_type?: 'veg' | 'non-veg' | null;
+    dietary_type: 'veg' | 'non-veg' | null;
   }
 
   export interface MenuItemVariant {
@@ -55,4 +55,6 @@
     wifi_password?: string;
     opening_time?: string;
     closing_time?: string;
+    payment_qr_code?: string;
+    upi_id?: string;
   }
