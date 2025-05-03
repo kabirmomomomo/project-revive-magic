@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/components/ui/sonner";
@@ -59,14 +60,8 @@ const MenuEditor = () => {
     queryFn: async () => {
       if (!user?.id) return null;
       
-      try {
-        const restaurant = await getUserRestaurant();
-        console.log("Restaurant data fetched:", restaurant);
-        return restaurant;
-      } catch (error) {
-        console.error("Error fetching restaurant data:", error);
-        return null;
-      }
+      const restaurant = await getUserRestaurant();
+      return restaurant;
     },
     enabled: !!user,
   });
@@ -99,7 +94,6 @@ const MenuEditor = () => {
         // Check for saved state
         const savedState = loadState();
         if (savedState && savedState.id === restaurantData.id) {
-          console.log("Loading saved state from localStorage");
           setRestaurant(savedState);
           
           const expanded: Record<string, boolean> = {};
@@ -108,7 +102,6 @@ const MenuEditor = () => {
           });
           setExpandedCategories(expanded);
         } else {
-          console.log("Loading state from database");
           setRestaurant(restaurantData);
           
           const expanded: Record<string, boolean> = {};
@@ -234,8 +227,6 @@ const MenuEditor = () => {
     field: keyof MenuItemUI,
     value: string | boolean
   ) => {
-    console.log(`Updating menu item ${itemId}, field: ${String(field)}, value:`, value);
-    
     setRestaurant(prev => {
       const newState = {
         ...prev,
@@ -250,14 +241,8 @@ const MenuEditor = () => {
             : category
         ),
       };
-      
-      // Save changes immediately through the debounced function
-      debouncedSave(newState);
-      
       return newState;
     });
-    
-    console.log(`Updating menu item ${itemId} with field: ${String(field)} and value: ${value}`);
   };
 
   const deleteMenuItem = (categoryId: string, itemId: string) => {
@@ -656,7 +641,6 @@ const MenuEditor = () => {
   };
 
   const handleSaveMenu = () => {
-    console.log("Saving menu to database");
     saveMenuMutation.mutate(restaurant, {
       onSuccess: () => {
         markChangesAsSaved();

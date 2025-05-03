@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { cn } from "@/lib/utils";
 import { MenuItem as MenuItemType, MenuItemVariant } from "@/types/menu";
 import { useCart } from "@/contexts/CartContext";
-import { PlusCircle, MinusCircle, CircleSlash, Carrot, Fish } from "lucide-react";
+import { PlusCircle, MinusCircle, CircleSlash, Leaf, UtensilsCrossed } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
@@ -62,32 +62,6 @@ const MenuItem: React.FC<MenuItemProps> = ({ item, index }) => {
 
   const hasOptions = !!(item.variants?.length > 0 || item.addons?.length > 0);
 
-  // Helper function to render the dietary icon
-  const renderDietaryIcon = () => {
-    console.log("Rendering dietary icon for:", item.name, "Dietary type:", item.dietary_type);
-    
-    if (item.dietary_type === "veg") {
-      return (
-        <span className="inline-flex items-center justify-center ml-1">
-          <Carrot className={cn(
-            "text-green-600",
-            isMobile ? "h-3 w-3" : "h-4 w-4"
-          )} />
-        </span>
-      );
-    } else if (item.dietary_type === "non-veg") {
-      return (
-        <span className="inline-flex items-center justify-center ml-1">
-          <Fish className={cn(
-            "text-red-600", 
-            isMobile ? "h-3 w-3" : "h-4 w-4"
-          )} />
-        </span>
-      );
-    }
-    return null;
-  };
-
   return (
     <div
       key={item.id}
@@ -132,7 +106,22 @@ const MenuItem: React.FC<MenuItemProps> = ({ item, index }) => {
               isMobile ? "text-xs w-full mb-0 px-1" : "text-lg"
             )}>
               {item.name}
-              {renderDietaryIcon()}
+              {item.dietary_type === "veg" && (
+                <span className="inline-flex items-center justify-center ml-1">
+                  <Leaf className={cn(
+                    "text-green-600",
+                    isMobile ? "h-3 w-3" : "h-4 w-4"
+                  )} />
+                </span>
+              )}
+              {item.dietary_type === "non-veg" && (
+                <span className="inline-flex items-center justify-center ml-1">
+                  <UtensilsCrossed className={cn(
+                    "text-red-600", 
+                    isMobile ? "h-3 w-3" : "h-4 w-4"
+                  )} />
+                </span>
+              )}
             </h3>
             <div className={cn(
               "flex flex-col items-end gap-0 flex-shrink-0",

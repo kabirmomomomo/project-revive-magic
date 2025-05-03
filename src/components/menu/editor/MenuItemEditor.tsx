@@ -6,8 +6,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { X, Check, PlusCircle, Image as ImageIcon, Carrot, Fish } from "lucide-react";
+import { X, Check, PlusCircle, Image as ImageIcon, Leaf, UtensilsCrossed } from "lucide-react";
 import { MenuItemUI, MenuItemVariantUI, MenuItemAddonUI, MenuAddonOptionUI } from "@/services/menuService";
 import { toast } from "@/components/ui/sonner";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -80,7 +81,6 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
 }) => {
   const [selectedTab, setSelectedTab] = useState("details");
   const [imagePreview, setImagePreview] = useState<string | null>(activeItem.image_url || null);
-  const [dietaryType, setDietaryType] = useState<string>(activeItem.dietary_type || "");
 
   // Add refs for input fields
   const nameInputRef = useRef<HTMLInputElement>(null);
@@ -88,14 +88,6 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
   const priceInputRef = useRef<HTMLInputElement>(null);
   const variantNameInputRef = useRef<HTMLInputElement>(null);
   const variantPriceInputRef = useRef<HTMLInputElement>(null);
-
-  // Update state when activeItem changes
-  useEffect(() => {
-    // Ensure that dietary_type is properly synced from the activeItem prop
-    console.log("Active item updated in editor:", activeItem);
-    console.log("Dietary type from database:", activeItem.dietary_type);
-    setDietaryType(activeItem.dietary_type || "");
-  }, [activeItem]);
 
   // Auto-select input fields when component mounts or when new item is added
   useEffect(() => {
@@ -121,20 +113,6 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
       reader.readAsDataURL(file);
       handleImageUpload(activeCategoryId, activeItem.id, file);
     }
-  };
-
-  const handleDietaryTypeChange = (value: string) => {
-    console.log("Setting dietary type to:", value);
-    setDietaryType(value);
-    
-    // Send the proper null value to the database when "none" is selected
-    const dietaryValue = value === "" ? null : value;
-    
-    // Update the MenuItem with the new dietary type
-    updateMenuItem(activeCategoryId, activeItem.id, "dietary_type", dietaryValue);
-    
-    // Immediately save the menu to persist changes
-    handleSaveMenu();
   };
 
   return (
@@ -269,8 +247,16 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
                 <div className="space-y-2">
                   <Label>Dietary Type</Label>
                   <RadioGroup 
-                    value={dietaryType}
-                    onValueChange={handleDietaryTypeChange}
+                    value={activeItem.dietary_type || ""}
+                    onValueChange={(value) => {
+                      const dietaryType = value === "" ? null : value;
+                      updateMenuItem(
+                        activeCategoryId,
+                        activeItem.id,
+                        "dietary_type",
+                        dietaryType
+                      );
+                    }}
                     className="flex flex-row space-x-4"
                   >
                     <div className="flex items-center space-x-2">
@@ -280,14 +266,14 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="veg" id="dietary-veg" />
                       <Label htmlFor="dietary-veg" className="cursor-pointer flex items-center">
-                        <Carrot className="h-4 w-4 mr-1 text-green-600" />
+                        <Leaf className="h-4 w-4 mr-1 text-green-600" />
                         Vegetarian
                       </Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="non-veg" id="dietary-non-veg" />
                       <Label htmlFor="dietary-non-veg" className="cursor-pointer flex items-center">
-                        <Fish className="h-4 w-4 mr-1 text-red-600" />
+                        <UtensilsCrossed className="h-4 w-4 mr-1 text-red-600" />
                         Non-Vegetarian
                       </Label>
                     </div>
