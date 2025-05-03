@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -20,7 +21,7 @@ interface MenuItemEditorProps {
     categoryId: string,
     itemId: string,
     field: keyof MenuItemUI,
-    value: string | boolean
+    value: string | boolean | null
   ) => void;
   addVariant: (categoryId: string, itemId: string) => void;
   updateVariant: (
@@ -81,7 +82,7 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
 }) => {
   const [selectedTab, setSelectedTab] = useState("details");
   const [imagePreview, setImagePreview] = useState<string | null>(activeItem.image_url || null);
-  // Fix the type definition here to match expected values
+  // Explicitly type the state with the correct union type
   const [currentDietaryType, setCurrentDietaryType] = useState<"" | "veg" | "non-veg">(
     activeItem.dietary_type === "veg" ? "veg" : 
     activeItem.dietary_type === "non-veg" ? "non-veg" : ""
@@ -100,7 +101,7 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
       nameInputRef.current.select();
     }
     
-    // Update dietary type when activeItem changes - with proper type casting
+    // Update dietary type when activeItem changes with proper type assignment
     const dietaryType = activeItem.dietary_type === "veg" ? "veg" : 
                         activeItem.dietary_type === "non-veg" ? "non-veg" : "";
     setCurrentDietaryType(dietaryType);
@@ -127,8 +128,8 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
   };
 
   const handleDietaryTypeChange = (value: string) => {
-    // Convert the string value to the appropriate type
-    const dietaryType = value === "" ? "" : value as "" | "veg" | "non-veg";
+    // Explicitly cast the value to the correct type for the state
+    const dietaryType = value as "" | "veg" | "non-veg";
     setCurrentDietaryType(dietaryType);
     
     // For the API call, convert empty string to null
