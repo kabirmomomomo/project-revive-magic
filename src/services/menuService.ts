@@ -294,6 +294,7 @@ export const getRestaurantById = async (id: string): Promise<RestaurantUI | null
         image_url: item.image_url,
         is_visible: item.is_visible,
         is_available: item.is_available,
+        dietary_type: item.dietary_type, // Make sure dietary_type is included here
         variants: variantsResult.data || [],
         addons,
       });
@@ -440,7 +441,7 @@ export const saveRestaurantMenu = async (restaurant: RestaurantUI) => {
           name: category.name,
           restaurant_id: id,
           order: index,
-          type: category.type || null, // Ensure type is saved to database
+          type: category.type || null,
           updated_at: new Date().toISOString()
         });
       
@@ -453,7 +454,7 @@ export const saveRestaurantMenu = async (restaurant: RestaurantUI) => {
               name: category.name,
               restaurant_id: id,
               order: index,
-              type: category.type || null, // Ensure type is saved to database
+              type: category.type || null,
               updated_at: new Date().toISOString()
             });
           
@@ -505,6 +506,7 @@ export const saveRestaurantMenu = async (restaurant: RestaurantUI) => {
             is_visible: item.is_visible !== false,
             is_available: item.is_available !== false,
             category_id: category.id,
+            dietary_type: item.dietary_type || null, // Make sure dietary_type is included
             order: itemIndex,
             updated_at: new Date().toISOString()
           });
@@ -524,6 +526,7 @@ export const saveRestaurantMenu = async (restaurant: RestaurantUI) => {
                 is_visible: item.is_visible !== false,
                 is_available: item.is_available !== false,
                 category_id: category.id,
+                dietary_type: item.dietary_type || null, // Make sure dietary_type is included
                 order: itemIndex,
                 updated_at: new Date().toISOString()
               });
