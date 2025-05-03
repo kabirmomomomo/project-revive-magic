@@ -6,9 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { X, Check, PlusCircle, Image as ImageIcon, Leaf, UtensilsCrossed } from "lucide-react";
+import { X, Check, PlusCircle, Image as ImageIcon, Carrot, Fish } from "lucide-react";
 import { MenuItemUI, MenuItemVariantUI, MenuItemAddonUI, MenuAddonOptionUI } from "@/services/menuService";
 import { toast } from "@/components/ui/sonner";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -92,8 +91,10 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
 
   // Update state when activeItem changes
   useEffect(() => {
+    // Ensure that dietary_type is properly synced from the activeItem prop
     setDietaryType(activeItem.dietary_type || "");
-  }, [activeItem.dietary_type]);
+    console.log("Dietary type updated in editor:", activeItem.dietary_type);
+  }, [activeItem.dietary_type, activeItem.id]);
 
   // Auto-select input fields when component mounts or when new item is added
   useEffect(() => {
@@ -123,8 +124,15 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
 
   const handleDietaryTypeChange = (value: string) => {
     setDietaryType(value);
-    const dietaryType = value === "" ? null : value;
-    updateMenuItem(activeCategoryId, activeItem.id, "dietary_type", dietaryType);
+    // Send the proper null value to the database when "none" is selected
+    const dietaryValue = value === "" ? null : value;
+    console.log("Setting dietary type to:", dietaryValue);
+    
+    // Update the MenuItem with the new dietary type
+    updateMenuItem(activeCategoryId, activeItem.id, "dietary_type", dietaryValue);
+    
+    // Immediately save the menu to persist changes
+    handleSaveMenu();
   };
 
   return (
@@ -270,14 +278,14 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="veg" id="dietary-veg" />
                       <Label htmlFor="dietary-veg" className="cursor-pointer flex items-center">
-                        <Leaf className="h-4 w-4 mr-1 text-green-600" />
+                        <Carrot className="h-4 w-4 mr-1 text-green-600" />
                         Vegetarian
                       </Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="non-veg" id="dietary-non-veg" />
                       <Label htmlFor="dietary-non-veg" className="cursor-pointer flex items-center">
-                        <UtensilsCrossed className="h-4 w-4 mr-1 text-red-600" />
+                        <Fish className="h-4 w-4 mr-1 text-red-600" />
                         Non-Vegetarian
                       </Label>
                     </div>
