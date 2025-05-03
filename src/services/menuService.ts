@@ -1,5 +1,6 @@
+
 import { supabase } from '@/integrations/supabase/client';
-import { Restaurant, MenuCategory, MenuItem, MenuItemVariant, MenuItemAddon, MenuAddonOption } from '@/types/menu';
+import { Restaurant, MenuCategory, MenuItem, MenuItemVariant, MenuItemAddon, MenuAddonOption, CategoryType } from '@/types/menu';
 import { v4 as uuidv4 } from 'uuid';
 
 // UI types
