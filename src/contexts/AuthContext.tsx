@@ -12,7 +12,6 @@ interface AuthContextType {
   supabase: typeof supabase;
   signUp: (email: string, password: string, name: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
-  signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -25,44 +24,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // First, set up the auth state change listener
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Initial session check:', session ? 'Logged in' : 'No session');
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+    }).catch(error => {
+      console.error('Error getting session:', error);
+      setLoading(false);
+    });
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       console.log('Auth state changed:', event, session ? 'Has session' : 'No session');
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
-      
-      // Redirect to menu editor on successful login
-      if (event === 'SIGNED_IN' && session) {
-        navigate('/menu-editor');
-      }
     });
 
-    // Then, check for existing session
-    const checkSession = async () => {
-      try {
-        // Handle hash fragment from OAuth redirect if present
-        if (window.location.hash && window.location.hash.includes('access_token')) {
-          console.log('Found hash fragment with tokens, clearing it to prevent parsing errors');
-          // The hash contains sensitive tokens, just clear it without trying to querySelector
-          window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
-        }
-
-        const { data: { session } } = await supabase.auth.getSession();
-        console.log('Initial session check:', session ? 'Logged in' : 'No session');
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
-      } catch (error) {
-        console.error('Error getting session:', error);
-        setLoading(false);
-      }
-    };
-
-    checkSession();
-
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, []);
 
   const signUp = async (email: string, password: string, name: string) => {
     try {
@@ -146,40 +126,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signInWithGoogle = async () => {
-    try {
-      setLoading(true);
-      console.log('Attempting to sign in with Google');
-      
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/login`
-        }
-      });
-
-      if (error) {
-        console.error('Supabase Google signin error:', error);
-        throw error;
-      }
-      
-      // No need for navigation here as the OAuth process will handle redirection
-    } catch (error) {
-      console.error('Error signing in with Google:', error);
-      
-      if (error instanceof Error) {
-        if (error.message.includes('fetch')) {
-          toast.error('Network error. Please check your connection and try again.');
-        } else {
-          toast.error(error.message);
-        }
-      } else {
-        toast.error('Failed to sign in with Google. Please try again later.');
-      }
-      setLoading(false);
-    }
-  };
-
   const signOut = async () => {
     try {
       setLoading(true);
@@ -210,7 +156,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       supabase,
       signUp, 
       signIn, 
-      signInWithGoogle,
       signOut 
     }}>
       {children}
