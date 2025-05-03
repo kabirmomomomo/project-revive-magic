@@ -1,4 +1,5 @@
 
+
   export interface MenuItem {
     id: string;
     name: string;
@@ -9,6 +10,7 @@
     image_url?: string;
     is_visible?: boolean;
     is_available?: boolean;
+    is_vegetarian?: boolean | null;
     variants?: MenuItemVariant[];
     addons?: MenuItemAddon[];
   }
@@ -55,3 +57,4 @@
     opening_time?: string;
     closing_time?: string;
   }
+

@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { X, Check, PlusCircle, Image as ImageIcon } from "lucide-react";
+import { X, Check, PlusCircle, Image as ImageIcon, LeafyGreen, Beef } from "lucide-react";
 import { MenuItemUI, MenuItemVariantUI, MenuItemAddonUI, MenuAddonOptionUI } from "@/services/menuService";
 import { toast } from "@/components/ui/sonner";
 
@@ -242,6 +242,75 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
                     />
                   </div>
                 </div>
+                
+                {/* Vegetarian toggle section */}
+                <div className="bg-gray-50 p-3 rounded-md border">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="item-vegetarian" className="text-sm font-medium">Food Type</Label>
+                      <div className="flex items-center gap-2">
+                        {activeItem.is_vegetarian === true && <LeafyGreen className="h-4 w-4 text-green-600" />}
+                        {activeItem.is_vegetarian === false && <Beef className="h-4 w-4 text-red-600" />}
+                        <p className="text-sm text-muted-foreground">
+                          {activeItem.is_vegetarian === true 
+                            ? "Vegetarian" 
+                            : activeItem.is_vegetarian === false 
+                              ? "Non-vegetarian" 
+                              : "Not specified"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button 
+                        type="button" 
+                        variant={activeItem.is_vegetarian === true ? "default" : "outline"}
+                        size="sm"
+                        className="gap-1"
+                        onClick={() => updateMenuItem(
+                          activeCategoryId,
+                          activeItem.id,
+                          "is_vegetarian",
+                          true
+                        )}
+                      >
+                        <LeafyGreen className="h-4 w-4" />
+                        <span>Veg</span>
+                      </Button>
+                      <Button 
+                        type="button" 
+                        variant={activeItem.is_vegetarian === false ? "default" : "outline"}
+                        size="sm"
+                        className="gap-1"
+                        onClick={() => updateMenuItem(
+                          activeCategoryId,
+                          activeItem.id,
+                          "is_vegetarian",
+                          false
+                        )}
+                      >
+                        <Beef className="h-4 w-4" />
+                        <span>Non-veg</span>
+                      </Button>
+                      {activeItem.is_vegetarian !== null && (
+                        <Button 
+                          type="button" 
+                          variant="ghost"
+                          size="sm"
+                          className="text-gray-500"
+                          onClick={() => updateMenuItem(
+                            activeCategoryId,
+                            activeItem.id,
+                            "is_vegetarian",
+                            null as any
+                          )}
+                        >
+                          Clear
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                
                 <div className="flex items-center space-x-2">
                   <Label htmlFor="item-visible">Visible</Label>
                   <Switch

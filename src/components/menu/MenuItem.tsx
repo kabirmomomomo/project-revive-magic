@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { cn } from "@/lib/utils";
 import { MenuItem as MenuItemType, MenuItemVariant } from "@/types/menu";
 import { useCart } from "@/contexts/CartContext";
-import { PlusCircle, MinusCircle, CircleSlash } from "lucide-react";
+import { PlusCircle, MinusCircle, CircleSlash, LeafyGreen, Beef } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
@@ -101,12 +101,25 @@ const MenuItem: React.FC<MenuItemProps> = ({ item, index }) => {
             "flex items-center justify-between w-full gap-2",
             isMobile ? "flex-col items-center gap-0 mb-1" : ""
           )}>
-            <h3 className={cn(
-              "font-semibold text-purple-900 truncate leading-tight",
-              isMobile ? "text-xs w-full mb-0 px-1" : "text-lg"
-            )}>
-              {item.name}
-            </h3>
+            <div className="flex items-center gap-1.5">
+              {/* Vegetarian/Non-vegetarian indicator */}
+              {item.is_vegetarian === true && (
+                <span className="flex items-center justify-center bg-green-100 p-0.5 rounded-full">
+                  <LeafyGreen size={isMobile ? 12 : 14} className="text-green-600" />
+                </span>
+              )}
+              {item.is_vegetarian === false && (
+                <span className="flex items-center justify-center bg-red-100 p-0.5 rounded-full">
+                  <Beef size={isMobile ? 12 : 14} className="text-red-600" />
+                </span>
+              )}
+              <h3 className={cn(
+                "font-semibold text-purple-900 truncate leading-tight",
+                isMobile ? "text-xs w-full mb-0 px-1" : "text-lg"
+              )}>
+                {item.name}
+              </h3>
+            </div>
             <div className={cn(
               "flex flex-col items-end gap-0 flex-shrink-0",
               isMobile ? "items-center" : ""

@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/components/ui/sonner";
@@ -207,6 +206,7 @@ const MenuEditor = () => {
                   price: "0.00",
                   is_visible: true,
                   is_available: true,
+                  is_vegetarian: null,
                   variants: [],
                   addons: []
                 },
@@ -225,7 +225,7 @@ const MenuEditor = () => {
     categoryId: string,
     itemId: string,
     field: keyof MenuItemUI,
-    value: string | boolean
+    value: string | boolean | null
   ) => {
     setRestaurant(prev => {
       const newState = {
