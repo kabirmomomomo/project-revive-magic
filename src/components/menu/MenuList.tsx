@@ -1,4 +1,3 @@
-
 import React from "react";
 import MenuCategory from "./MenuCategory";
 import { CategoryType, MenuCategory as MenuCategoryType } from "@/types/menu";

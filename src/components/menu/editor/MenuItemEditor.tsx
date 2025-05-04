@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -9,7 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { X, Check, PlusCircle, Image as ImageIcon, Leaf, UtensilsCrossed } from "lucide-react";
+import { X, Check, PlusCircle, Image as ImageIcon, Beef, LeafyGreen } from "lucide-react";
 import { MenuItemUI, MenuItemVariantUI, MenuItemAddonUI, MenuAddonOptionUI } from "@/services/menuService";
 import { toast } from "@/components/ui/sonner";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -82,7 +81,8 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
 }) => {
   const [selectedTab, setSelectedTab] = useState("details");
   const [imagePreview, setImagePreview] = useState<string | null>(activeItem.image_url || null);
-  // Explicitly type the state with the correct union type
+  
+  // Define the dietary type state with proper typing
   const [currentDietaryType, setCurrentDietaryType] = useState<"" | "veg" | "non-veg">(
     activeItem.dietary_type === "veg" ? "veg" : 
     activeItem.dietary_type === "non-veg" ? "non-veg" : ""
@@ -101,7 +101,7 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
       nameInputRef.current.select();
     }
     
-    // Update dietary type when activeItem changes with proper type assignment
+    // Update dietary type when activeItem changes
     const dietaryType = activeItem.dietary_type === "veg" ? "veg" : 
                         activeItem.dietary_type === "non-veg" ? "non-veg" : "";
     setCurrentDietaryType(dietaryType);
@@ -128,7 +128,7 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
   };
 
   const handleDietaryTypeChange = (value: string) => {
-    // Explicitly cast the value to the correct type for the state
+    // Type safety for the state update
     const dietaryType = value as "" | "veg" | "non-veg";
     setCurrentDietaryType(dietaryType);
     
@@ -285,14 +285,14 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="veg" id="dietary-veg" />
                       <Label htmlFor="dietary-veg" className="cursor-pointer flex items-center">
-                        <Leaf className="h-4 w-4 mr-1 text-green-600" />
+                        <LeafyGreen className="h-4 w-4 mr-1 text-green-600" />
                         Vegetarian
                       </Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="non-veg" id="dietary-non-veg" />
                       <Label htmlFor="dietary-non-veg" className="cursor-pointer flex items-center">
-                        <UtensilsCrossed className="h-4 w-4 mr-1 text-red-600" />
+                        <Beef className="h-4 w-4 mr-1 text-red-600" />
                         Non-Vegetarian
                       </Label>
                     </div>

@@ -1,8 +1,9 @@
+
 import React, { useState } from "react";
 import { cn } from "@/lib/utils";
 import { MenuItem as MenuItemType, MenuItemVariant } from "@/types/menu";
 import { useCart } from "@/contexts/CartContext";
-import { PlusCircle, MinusCircle, CircleSlash, Leaf, UtensilsCrossed } from "lucide-react";
+import { PlusCircle, MinusCircle, CircleSlash, Beef, LeafyGreen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
@@ -67,7 +68,7 @@ const MenuItem: React.FC<MenuItemProps> = ({ item, index }) => {
     if (item.dietary_type === "veg") {
       return (
         <span className="inline-flex items-center justify-center ml-1">
-          <Leaf className={cn(
+          <LeafyGreen className={cn(
             "text-green-600",
             isMobile ? "h-3 w-3" : "h-4 w-4"
           )} />
@@ -76,7 +77,7 @@ const MenuItem: React.FC<MenuItemProps> = ({ item, index }) => {
     } else if (item.dietary_type === "non-veg") {
       return (
         <span className="inline-flex items-center justify-center ml-1">
-          <UtensilsCrossed className={cn(
+          <Beef className={cn(
             "text-red-600", 
             isMobile ? "h-3 w-3" : "h-4 w-4"
           )} />
