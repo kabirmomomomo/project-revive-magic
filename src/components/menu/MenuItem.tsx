@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { cn } from "@/lib/utils";
 import { MenuItem as MenuItemType, MenuItemVariant } from "@/types/menu";
 import { useCart } from "@/contexts/CartContext";
-import { PlusCircle, MinusCircle, CircleSlash, Beef, LeafyGreen } from "lucide-react";
+import { PlusCircle, MinusCircle, CircleSlash, LeafyGreen, Beef } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
@@ -62,27 +62,13 @@ const MenuItem: React.FC<MenuItemProps> = ({ item, index }) => {
   };
 
   const hasOptions = !!(item.variants?.length > 0 || item.addons?.length > 0);
-  
-  // Helper function to render dietary type icon
+
   const renderDietaryIcon = () => {
-    if (item.dietary_type === "veg") {
-      return (
-        <span className="inline-flex items-center justify-center ml-1">
-          <LeafyGreen className={cn(
-            "text-green-600",
-            isMobile ? "h-3 w-3" : "h-4 w-4"
-          )} />
-        </span>
-      );
-    } else if (item.dietary_type === "non-veg") {
-      return (
-        <span className="inline-flex items-center justify-center ml-1">
-          <Beef className={cn(
-            "text-red-600", 
-            isMobile ? "h-3 w-3" : "h-4 w-4"
-          )} />
-        </span>
-      );
+    console.log(`Rendering dietary icon for item ${item.id}: ${JSON.stringify(item.dietary_type)}`);
+    if (item.dietary_type === 'veg') {
+      return <LeafyGreen size={isMobile ? 14 : 16} className="text-green-600 flex-shrink-0" />;
+    } else if (item.dietary_type === 'non-veg') {
+      return <Beef size={isMobile ? 14 : 16} className="text-red-600 flex-shrink-0" />;
     }
     return null;
   };
@@ -126,13 +112,15 @@ const MenuItem: React.FC<MenuItemProps> = ({ item, index }) => {
             "flex items-center justify-between w-full gap-2",
             isMobile ? "flex-col items-center gap-0 mb-1" : ""
           )}>
-            <h3 className={cn(
-              "font-semibold text-purple-900 truncate leading-tight flex items-center",
-              isMobile ? "text-xs w-full mb-0 px-1" : "text-lg"
-            )}>
-              {item.name}
+            <div className="flex items-center gap-1">
               {renderDietaryIcon()}
-            </h3>
+              <h3 className={cn(
+                "font-semibold text-purple-900 truncate leading-tight",
+                isMobile ? "text-xs w-full mb-0 px-1" : "text-lg"
+              )}>
+                {item.name}
+              </h3>
+            </div>
             <div className={cn(
               "flex flex-col items-end gap-0 flex-shrink-0",
               isMobile ? "items-center" : ""
@@ -193,7 +181,8 @@ const MenuItem: React.FC<MenuItemProps> = ({ item, index }) => {
                       <div key={variant.id} className={cn(
                         "flex items-center justify-between hover:bg-purple-100/60 rounded-md transition-colors cursor-pointer",
                         isMobile ? "px-1 py-0.5" : "px-1 py-0.5"
-                      )} onClick={() => handleVariantChange(variant.id)}>
+                      )}
+                      onClick={() => handleVariantChange(variant.id)}>
                         <div className="flex items-center space-x-2">
                           <RadioGroupItem
                             value={variant.id}

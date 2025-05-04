@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -81,12 +82,6 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
 }) => {
   const [selectedTab, setSelectedTab] = useState("details");
   const [imagePreview, setImagePreview] = useState<string | null>(activeItem.image_url || null);
-  
-  // Define the dietary type state with proper typing
-  const [currentDietaryType, setCurrentDietaryType] = useState<"" | "veg" | "non-veg">(
-    activeItem.dietary_type === "veg" ? "veg" : 
-    activeItem.dietary_type === "non-veg" ? "non-veg" : ""
-  );
 
   // Add refs for input fields
   const nameInputRef = useRef<HTMLInputElement>(null);
@@ -100,13 +95,7 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
     if (nameInputRef.current) {
       nameInputRef.current.select();
     }
-    
-    // Update dietary type when activeItem changes
-    const dietaryType = activeItem.dietary_type === "veg" ? "veg" : 
-                        activeItem.dietary_type === "non-veg" ? "non-veg" : "";
-    setCurrentDietaryType(dietaryType);
-    
-  }, [activeItem.id, activeItem.dietary_type]);
+  }, [activeItem.id]);
 
   // Auto-select variant input fields when new variant is added
   useEffect(() => {
@@ -128,18 +117,24 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
   };
 
   const handleDietaryTypeChange = (value: string) => {
-    // Type safety for the state update
-    const dietaryType = value as "" | "veg" | "non-veg";
-    setCurrentDietaryType(dietaryType);
+    // Log before updating to see the current and new values
+    console.log(`Changing dietary type from ${activeItem.dietary_type} to ${value === "none" ? null : value}`);
     
-    // For the API call, convert empty string to null
-    const apiDietaryValue = value === "" ? null : value;
+    // Make sure to pass the correct type value to the updateMenuItem function
     updateMenuItem(
       activeCategoryId,
       activeItem.id,
       "dietary_type",
-      apiDietaryValue
+      value === "none" ? null : value as "veg" | "non-veg"
     );
+    
+    // Log the change to ensure it's being properly captured
+    console.log(`Set dietary type to: ${value}, activeItem now shows: ${activeItem.dietary_type}`);
+    
+    // Immediately save the menu to persist the change
+    setTimeout(() => {
+      handleSaveMenu();
+    }, 100);
   };
 
   return (
@@ -209,7 +204,7 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
                   <Textarea
                     id="item-description"
                     ref={descriptionInputRef}
-                    value={activeItem.description}
+                    value={activeItem.description || ''}
                     onChange={(e) =>
                       updateMenuItem(
                         activeCategoryId,
@@ -271,16 +266,17 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
                   </div>
                 </div>
                 
-                <div className="space-y-2">
-                  <Label>Dietary Type</Label>
+                {/* Dietary Type Selection */}
+                <div>
+                  <Label htmlFor="dietary-type" className="mb-2 block">Dietary Type</Label>
                   <RadioGroup 
-                    value={currentDietaryType}
+                    value={activeItem.dietary_type || "none"}
                     onValueChange={handleDietaryTypeChange}
-                    className="flex flex-row space-x-4"
+                    className="flex flex-col space-y-1"
                   >
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="" id="dietary-none" />
-                      <Label htmlFor="dietary-none" className="cursor-pointer">None</Label>
+                      <RadioGroupItem value="none" id="dietary-none" />
+                      <Label htmlFor="dietary-none" className="cursor-pointer">Not specified</Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="veg" id="dietary-veg" />
