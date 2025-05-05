@@ -56,4 +56,6 @@
     opening_time?: string;
     closing_time?: string;
     ordersEnabled?: boolean;
+    payment_qr_code?: string;
+    upi_id?: string;
   }
