@@ -26,6 +26,8 @@ import { OrderProvider } from '@/contexts/OrderContext';
 import OrderHistory from '@/components/menu/OrderHistory';
 import WaiterCallButton from '@/components/menu/WaiterCallButton';
 import CategoryNavigationDialog from '@/components/menu/CategoryNavigationDialog';
+import BillSelectionDialog from "@/components/menu/BillSelectionDialog";
+import SessionCodeDisplay from "@/components/menu/SessionCodeDisplay";
 
 // Sample data as fallback when API call fails or is loading
 const sampleData: Restaurant = {
@@ -65,6 +67,11 @@ const MenuPreview = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<CategoryType>("food");
   const isMobile = useIsMobile();
+  
+  // New state for bill selection dialog
+  const [showBillDialog, setShowBillDialog] = useState(false);
+  const [sessionCode, setSessionCode] = useState<string | null>(null);
+  const [isSessionOwner, setIsSessionOwner] = useState(false);
 
   // Optimize query with better caching and error handling
   const { data: restaurant, isLoading, error, refetch } = useQuery({
@@ -197,11 +204,80 @@ const MenuPreview = () => {
     
     // Include table ID in QR code if available
     const baseUrl = `${window.location.origin}/menu-preview/${restaurantToDisplay.id}`;
+    
+    // Add the session code if we have one
+    if (sessionCode && tableId) {
+      return `${baseUrl}?table=${tableId}&sessionCode=${sessionCode}`;
+    }
+    
     return tableId ? `${baseUrl}?table=${tableId}` : baseUrl;
-  }, [restaurantToDisplay, tableId]);
+  }, [restaurantToDisplay, tableId, sessionCode]);
   
   // Check if we have a table ID to enable table features
   const isTableContext = !!tableId;
+  
+  // Check for existing session or initialize bill selection on first load
+  useEffect(() => {
+    if (tableId && restaurantToDisplay) {
+      // Check if we have a session code in URL params (joining a friend)
+      const urlSessionCode = searchParams.get('sessionCode');
+      
+      // First check URL for session code
+      if (urlSessionCode) {
+        // Look up this session in the database
+        supabase
+          .from("bill_sessions")
+          .select("*")
+          .eq("code", urlSessionCode)
+          .eq("is_active", true)
+          .single()
+          .then(({ data, error }) => {
+            if (data && !error) {
+              // Store this in localStorage
+              localStorage.setItem("billSessionId", data.id);
+              localStorage.setItem("billSessionCode", data.code);
+              localStorage.setItem("billSessionOwner", "false");
+              
+              setSessionCode(data.code);
+              setIsSessionOwner(false);
+            }
+          });
+      } else {
+        // Check localStorage for existing session
+        const storedSessionId = localStorage.getItem("billSessionId");
+        const storedSessionCode = localStorage.getItem("billSessionCode");
+        const storedIsOwner = localStorage.getItem("billSessionOwner") === "true";
+        
+        if (storedSessionId && storedSessionCode) {
+          // Verify the session is still active
+          supabase
+            .from("bill_sessions")
+            .select("*")
+            .eq("id", storedSessionId)
+            .eq("is_active", true)
+            .single()
+            .then(({ data, error }) => {
+              if (data && !error) {
+                // Session is still active
+                setSessionCode(storedSessionCode);
+                setIsSessionOwner(storedIsOwner);
+              } else {
+                // Session is no longer active, clear and show dialog
+                localStorage.removeItem("billSessionId");
+                localStorage.removeItem("billSessionCode");
+                localStorage.removeItem("billSessionOwner");
+                
+                // Show the dialog to create/join a session
+                setShowBillDialog(true);
+              }
+            });
+        } else {
+          // No existing session, show dialog to create/join
+          setShowBillDialog(true);
+        }
+      }
+    }
+  }, [tableId, restaurantToDisplay, searchParams]);
   
   // Show loading state
   if (isLoading) {
@@ -293,9 +369,39 @@ const MenuPreview = () => {
             openCategories={openCategories}
             toggleCategory={toggleCategory}
           />
+          
+          {/* Show the session code if this user is the owner of a bill session */}
+          {sessionCode && isSessionOwner && (
+            <SessionCodeDisplay sessionCode={sessionCode} />
+          )}
         </div>
-        {isOrderingEnabled && <Cart tableId={tableId || undefined} />}
-        {isOrderingEnabled && <OrderHistory tableId={tableId || undefined} />}
+        
+        {isOrderingEnabled && (
+          <Cart 
+            tableId={tableId || undefined} 
+            sessionId={localStorage.getItem("billSessionId") || undefined}
+            sessionCode={sessionCode || undefined}
+            isSessionOwner={isSessionOwner}
+          />
+        )}
+        
+        {isOrderingEnabled && (
+          <OrderHistory 
+            tableId={tableId || undefined} 
+            sessionId={localStorage.getItem("billSessionId") || undefined}
+          />
+        )}
+        
+        {/* Bill selection dialog */}
+        {tableId && restaurantToDisplay && (
+          <BillSelectionDialog
+            open={showBillDialog}
+            onOpenChange={setShowBillDialog}
+            restaurantId={restaurantToDisplay.id}
+            tableId={tableId}
+          />
+        )}
+        
         <Toaster />
       </OrderProvider>
     </CartProvider>

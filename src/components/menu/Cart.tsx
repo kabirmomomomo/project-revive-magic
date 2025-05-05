@@ -1,7 +1,8 @@
+
 import React, { useState } from "react";
 import { useCart } from "@/contexts/CartContext";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, X, Minus, Plus, Trash2 } from "lucide-react";
+import { ShoppingCart, X, Minus, Plus, Trash2, Users } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -12,12 +13,16 @@ import {
 import { useOrders } from '@/contexts/OrderContext';
 import { useParams } from 'react-router-dom';
 import { toast } from '@/components/ui/sonner';
+import { Badge } from "@/components/ui/badge";
 
 interface CartProps {
   tableId?: string;
+  sessionId?: string;
+  sessionCode?: string;
+  isSessionOwner?: boolean;
 }
 
-const Cart: React.FC<CartProps> = ({ tableId }) => {
+const Cart: React.FC<CartProps> = ({ tableId, sessionId, sessionCode, isSessionOwner }) => {
   const [open, setOpen] = useState(false);
   const { menuId } = useParams();
   const { cartItems, removeFromCart, updateQuantity, getCartTotal, getItemCount, clearCart } = useCart();
@@ -28,7 +33,9 @@ const Cart: React.FC<CartProps> = ({ tableId }) => {
       toast.error('Restaurant ID not found');
       return;
     }
-    await placeOrder(menuId, tableId);
+    
+    // Pass both tableId and sessionId to the placeOrder function
+    await placeOrder(menuId, tableId, sessionId);
     setOpen(false);
   };
 
@@ -52,7 +59,19 @@ const Cart: React.FC<CartProps> = ({ tableId }) => {
         <SheetHeader>
           <SheetTitle className="text-xl flex items-center gap-2 text-purple-900">
             <ShoppingCart className="h-5 w-5" />
-            Your Cart {tableId && <span className="text-sm font-normal">(Table {tableId})</span>}
+            Your Cart 
+            {tableId && (
+              <span className="text-sm font-normal">(Table {tableId})</span>
+            )}
+            {sessionCode && (
+              <Badge 
+                variant="outline" 
+                className="ml-2 bg-purple-50 text-purple-700 border-purple-200 gap-1"
+              >
+                <Users className="h-3 w-3" />
+                {sessionCode}
+              </Badge>
+            )}
           </SheetTitle>
         </SheetHeader>
         
@@ -63,6 +82,13 @@ const Cart: React.FC<CartProps> = ({ tableId }) => {
                 <ShoppingCart className="h-16 w-16 mx-auto" />
               </div>
               <p className="text-muted-foreground">Your cart is empty</p>
+              
+              {sessionCode && !isSessionOwner && (
+                <div className="mt-4 p-3 bg-purple-50 rounded-lg text-sm text-purple-700">
+                  You've joined bill <span className="font-mono font-medium">{sessionCode}</span>. 
+                  <br/>Your orders will be added to this shared bill.
+                </div>
+              )}
             </div>
           ) : (
             <>

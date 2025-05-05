@@ -1,106 +1,201 @@
 
-import React from 'react';
-import { useOrders } from '@/contexts/OrderContext';
+import React, { useState } from 'react';
+import { Clock, ChevronDown, ChevronUp, Smartphone, Receipt, Users, Table } from 'lucide-react';
 import { format } from 'date-fns';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { useOrders } from '@/contexts/OrderContext';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { ClipboardList } from 'lucide-react';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from '@/components/ui/drawer';
+import { Badge } from '@/components/ui/badge';
+import TableOrders from './TableOrders';
 
 interface OrderHistoryProps {
   tableId?: string;
+  sessionId?: string;
 }
 
-const OrderHistory: React.FC<OrderHistoryProps> = ({ tableId }) => {
-  const { orders } = useOrders();
-  const location = window.location.pathname;
-  const menuId = location.split('/menu-preview/')[1];
+const OrderHistoryItem = ({ order, isOpen, onToggle }: {
+  order: any;
+  isOpen: boolean;
+  onToggle: () => void;
+}) => {
+  return (
+    <div className="border border-gray-100 rounded-lg overflow-hidden shadow-sm mb-3 animate-in fade-in">
+      <div
+        className="flex items-center justify-between p-3 cursor-pointer bg-white hover:bg-gray-50"
+        onClick={onToggle}
+      >
+        <div className="flex items-center gap-2">
+          <div className="bg-purple-100 p-2 rounded-full">
+            <Receipt className="h-4 w-4 text-purple-700" />
+          </div>
+          <div>
+            <div className="font-medium text-sm">
+              Order #{order.id.substring(0, 6)}...
+              {order.is_split_bill && (
+                <Badge variant="outline" className="ml-2 text-xs bg-purple-50 text-purple-700 border-purple-200">
+                  Split Bill
+                </Badge>
+              )}
+            </div>
+            <div className="text-xs text-gray-500 flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              {format(new Date(order.created_at), 'MMM d, h:mm a')}
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="text-right">
+            <div className="font-medium">${Number(order.total_amount).toFixed(2)}</div>
+            <div className="text-xs text-gray-500">
+              {order.items.reduce((sum: number, item: any) => sum + item.quantity, 0)} items
+            </div>
+          </div>
+          <div className="text-gray-400">
+            {isOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+          </div>
+        </div>
+      </div>
 
-  const totalAmount = orders.reduce((sum, order) => sum + Number(order.total_amount), 0);
+      {isOpen && (
+        <div className="px-3 py-2 bg-gray-50 border-t border-gray-100 animate-in slide-in-from-top">
+          <div className="flex flex-wrap gap-2 mb-2">
+            {order.table_id && (
+              <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200 flex items-center gap-1">
+                <Table className="h-3 w-3" />
+                Table {order.table_id}
+              </Badge>
+            )}
+            {order.session_code && (
+              <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200 flex items-center gap-1">
+                <Users className="h-3 w-3" />
+                Session {order.session_code}
+              </Badge>
+            )}
+            <Badge variant="outline" className="text-xs bg-gray-50 text-gray-700 border-gray-200 flex items-center gap-1">
+              <Smartphone className="h-3 w-3" />
+              Device {order.device_id.substring(0, 6)}...
+            </Badge>
+          </div>
+          <div className="space-y-1 pt-1">
+            {order.items.map((item: any) => (
+              <div key={item.id} className="flex justify-between text-sm py-1">
+                <div className="text-gray-700">
+                  {item.quantity}× {item.item_name}
+                  {item.variant_name && (
+                    <span className="text-gray-500 text-xs"> ({item.variant_name})</span>
+                  )}
+                </div>
+                <div className="text-gray-900">${(item.price * item.quantity).toFixed(2)}</div>
+              </div>
+            ))}
+            <div className="border-t border-gray-200 mt-2 pt-2 flex justify-between text-sm font-medium">
+              <div className="text-gray-700">Total</div>
+              <div className="text-purple-700">${Number(order.total_amount).toFixed(2)}</div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const OrderHistory: React.FC<OrderHistoryProps> = ({ tableId, sessionId }) => {
+  const [openStates, setOpenStates] = useState<Record<string, boolean>>({});
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const { orders, tableOrders } = useOrders();
+
+  const toggleOrder = (orderId: string) => {
+    setOpenStates(prev => ({
+      ...prev,
+      [orderId]: !prev[orderId]
+    }));
+  };
+
+  // Filter orders by sessionId if provided
+  const filteredOrders = sessionId
+    ? orders.filter(order => order.session_id === sessionId)
+    : orders;
+
+  const hasOrders = filteredOrders.length > 0;
+  const hasTableOrders = tableOrders.length > 0;
 
   return (
-    <Sheet>
-      <SheetTrigger asChild>
-        <Button 
-          variant="outline" 
+    <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
+      <DrawerTrigger asChild>
+        <Button
+          variant="outline"
           size="icon"
-          className="fixed bottom-8 left-8 h-16 w-16 rounded-full shadow-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white border-none"
+          className={cn(
+            "fixed bottom-8 left-8 h-16 w-16 rounded-full shadow-lg border-none z-50 transition-all",
+            hasOrders
+              ? "bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white"
+              : "bg-gray-100 text-gray-400 hover:bg-gray-200"
+          )}
         >
-          <ClipboardList className="h-6 w-6" />
+          <Clock className="h-6 w-6" />
+          {hasOrders && (
+            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center">
+              {filteredOrders.length}
+            </span>
+          )}
         </Button>
-      </SheetTrigger>
-      <SheetContent side="left" className="w-full sm:max-w-md overflow-auto">
-        <SheetHeader className="mb-4">
-          <SheetTitle>Order History</SheetTitle>
-        </SheetHeader>
-        <div className="mt-2 space-y-4">
-          {orders.length === 0 ? (
-            <p className="text-center text-muted-foreground">No orders yet</p>
-          ) : (
-            <>
-              {orders.map((order) => (
-                <div 
-                  key={order.id}
-                  className="bg-white rounded-lg shadow p-4 border border-gray-100"
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <p className="text-sm text-muted-foreground">
-                        {format(new Date(order.created_at), 'MMM d, yyyy h:mm a')}
-                      </p>
-                      <p className="font-medium">
-                        Order #{order.id.slice(0, 8)}
-                        {order.table_id && (
-                          <span className="ml-2 text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full">
-                            Table {order.table_id}
-                          </span>
-                        )}
-                      </p>
-                    </div>
-                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800">
-                      {order.status}
-                    </span>
-                  </div>
-                  <div className="space-y-2">
-                    {order.items.map((item) => (
-                      <div key={item.id} className="flex justify-between text-sm">
-                        <span>
-                          {item.quantity}x {item.item_name}
-                          {item.variant_name && (
-                            <span className="text-muted-foreground"> ({item.variant_name})</span>
-                          )}
-                        </span>
-                        <span>${(item.price * item.quantity).toFixed(2)}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="mt-3 pt-3 border-t border-gray-100 flex justify-between font-medium">
-                    <span>Total</span>
-                    <span>${order.total_amount.toFixed(2)}</span>
-                  </div>
-                </div>
-              ))}
-              
-              <div className="fixed bottom-0 left-0 w-full p-4 bg-white border-t border-gray-200 shadow-lg">
-                <div className="mb-4">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-lg font-semibold text-purple-900">Total Amount</span>
-                    <span className="text-lg font-bold text-purple-900">
-                      ${totalAmount.toFixed(2)}
-                    </span>
-                  </div>
-                </div>
-                <Button 
-                  className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white"
-                  onClick={() => window.location.href = `/payment/${menuId}`}
-                >
-                  Proceed to Payment
-                </Button>
+      </DrawerTrigger>
+      <DrawerContent className="px-4 pb-6">
+        <DrawerHeader className="text-left">
+          <DrawerTitle className="text-xl flex items-center gap-2">
+            <Clock className="h-5 w-5" />
+            Order History
+            {sessionId && (
+              <Badge variant="outline" className="ml-2 bg-purple-50 text-purple-700 border-purple-200">
+                <Users className="h-3 w-3 mr-1" />
+                {localStorage.getItem("billSessionCode") || "Session"}
+              </Badge>
+            )}
+          </DrawerTitle>
+        </DrawerHeader>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="order-2 lg:order-1">
+            <div className="text-sm text-muted-foreground mb-2">Your Orders</div>
+            {!hasOrders ? (
+              <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-100">
+                <Clock className="mx-auto h-8 w-8 text-gray-300 mb-2" />
+                <p className="text-gray-500">No order history yet</p>
               </div>
-            </>
+            ) : (
+              <div className="space-y-1 max-h-[calc(60vh-2rem)] overflow-y-auto pr-1">
+                {filteredOrders.map(order => (
+                  <OrderHistoryItem
+                    key={order.id}
+                    order={order}
+                    isOpen={!!openStates[order.id]}
+                    onToggle={() => toggleOrder(order.id)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {tableId && (
+            <div className="order-1 lg:order-2">
+              <div className="text-sm text-muted-foreground mb-2">
+                {hasTableOrders
+                  ? `Table ${tableId} Orders`
+                  : "No orders at this table yet"}
+              </div>
+              <TableOrders />
+            </div>
           )}
         </div>
-      </SheetContent>
-    </Sheet>
+      </DrawerContent>
+    </Drawer>
   );
 };
 
