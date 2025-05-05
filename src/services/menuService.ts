@@ -60,8 +60,7 @@ export interface RestaurantUI {
   wifi_password?: string;
   opening_time?: string;
   closing_time?: string;
-  payment_qr_code?: string;
-  upi_id?: string;
+  ordersEnabled?: boolean;
 }
 
 // Add cache configuration
@@ -374,7 +373,7 @@ export const saveRestaurantMenu = async (restaurant: RestaurantUI) => {
   // Invalidate cache
   cache.delete(`restaurant_${restaurant.id}`);
 
-  const { id, name, description, categories, image_url, google_review_link, location, phone, wifi_password, opening_time, closing_time, payment_qr_code, upi_id } = restaurant;
+  const { id, name, description, categories, image_url, google_review_link, location, phone, wifi_password, opening_time, closing_time, ordersEnabled } = restaurant;
   
   try {
     const { data: { user } } = await supabase.auth.getUser();
@@ -393,8 +392,7 @@ export const saveRestaurantMenu = async (restaurant: RestaurantUI) => {
         wifi_password,
         opening_time,
         closing_time,
-        payment_qr_code,
-        upi_id,
+        ordersEnabled,
         user_id: userId,
         updated_at: new Date().toISOString()
       });

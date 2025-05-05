@@ -91,7 +91,7 @@ const MenuEditor = () => {
     []
   );
 
-  // Handle orders toggle change
+  // Handle orders toggle change - ensure it gets saved to the database immediately
   const handleOrdersToggle = (enabled: boolean) => {
     setRestaurant(prev => {
       const newState = {
