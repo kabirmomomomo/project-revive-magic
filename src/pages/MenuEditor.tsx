@@ -17,7 +17,7 @@ import {
   MenuItemAddonUI,
   MenuAddonOptionUI
 } from "@/services/menuService";
-import { CategoryType } from "@/types/menu"; // Add this import
+import { CategoryType } from "@/types/menu";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { lazy, Suspense } from 'react';
 import LoadingAnimation from '@/components/LoadingAnimation';
@@ -99,13 +99,29 @@ const MenuEditor = () => {
         ordersEnabled: enabled
       };
       
-      // Save changes immediately
-      saveMenuMutation.mutate(newState);
-      
       return newState;
     });
     
-    toast.success(enabled ? "Orders enabled" : "Orders disabled");
+    // Create a separate save mutation for toggling orders
+    // This ensures we're not using a debounced version for immediate feedback
+    saveMenuMutation.mutate({
+      ...restaurant,
+      ordersEnabled: enabled
+    }, {
+      onSuccess: () => {
+        toast.success(enabled ? "Orders enabled" : "Orders disabled");
+        markChangesAsSaved();
+      },
+      onError: (error) => {
+        toast.error("Failed to save orders setting. Please try again.");
+        console.error("Orders toggle error:", error);
+        // Revert the state if there's an error
+        setRestaurant(prev => ({
+          ...prev,
+          ordersEnabled: !enabled
+        }));
+      }
+    });
   };
 
   // Add state recovery
@@ -780,7 +796,7 @@ const MenuEditor = () => {
             <RestaurantForm restaurant={restaurant} setRestaurant={setRestaurant} />
           </Suspense>
 
-          {/* Add Orders Toggle Switch */}
+          {/* Orders Toggle Switch - Updated with better feedback */}
           <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
             <div className="flex items-center justify-between">
               <div className="space-y-1">
@@ -795,11 +811,15 @@ const MenuEditor = () => {
                 </Label>
                 <Switch
                   id="orders-enabled"
-                  checked={restaurant.ordersEnabled}
+                  checked={restaurant.ordersEnabled === true}
                   onCheckedChange={handleOrdersToggle}
+                  disabled={saveMenuMutation.isPending}
                 />
               </div>
             </div>
+            {saveMenuMutation.isPending && (
+              <p className="text-xs text-muted-foreground mt-2">Saving changes...</p>
+            )}
           </div>
 
           <Separator className="my-4" />

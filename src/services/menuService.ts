@@ -381,6 +381,7 @@ export const saveRestaurantMenu = async (restaurant: RestaurantUI) => {
     const { data: { user } } = await supabase.auth.getUser();
     const userId = user?.id || null;
     
+    // First update the restaurant details - ensure ordersEnabled is included
     const { error: restaurantError } = await supabase
       .from('restaurants')
       .upsert({
@@ -395,11 +396,14 @@ export const saveRestaurantMenu = async (restaurant: RestaurantUI) => {
         opening_time,
         closing_time,
         ordersEnabled,
+        payment_qr_code,
+        upi_id,
         user_id: userId,
         updated_at: new Date().toISOString()
       });
     
     if (restaurantError) {
+      console.error("Restaurant update error:", restaurantError);
       if (await handleRelationDoesNotExistError(restaurantError)) {
         return saveRestaurantMenu(restaurant);
       }
