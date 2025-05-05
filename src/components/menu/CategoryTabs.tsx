@@ -1,5 +1,5 @@
 
-import React, { useMemo } from "react";
+import React from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CategoryType } from "@/types/menu";
 import { cn } from "@/lib/utils";
@@ -9,17 +9,12 @@ import { useIsMobile } from "@/hooks/use-mobile";
 interface CategoryTabsProps {
   activeTab: CategoryType;
   onTabChange: (tab: CategoryType) => void;
-  visibleTabs?: CategoryType[]; // Add this prop to control which tabs are visible
 }
 
-const CategoryTabs: React.FC<CategoryTabsProps> = ({ 
-  activeTab, 
-  onTabChange,
-  visibleTabs 
-}) => {
+const CategoryTabs: React.FC<CategoryTabsProps> = ({ activeTab, onTabChange }) => {
   const isMobile = useIsMobile();
 
-  const allTabs: Array<{ value: CategoryType; label: string; icon: React.ReactNode }> = [
+  const tabs: Array<{ value: CategoryType; label: string; icon: React.ReactNode }> = [
     {
       value: "all",
       label: "ALL",
@@ -47,22 +42,9 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({
     }
   ];
 
-  // Filter tabs based on visibleTabs prop if provided
-  const tabs = useMemo(() => {
-    if (!visibleTabs || visibleTabs.length === 0) {
-      return allTabs; // If no visible tabs specified, show all
-    }
-    
-    // Always include "all" tab and any other tabs in the visibleTabs array
-    return allTabs.filter(tab => tab.value === "all" || visibleTabs.includes(tab.value));
-  }, [visibleTabs]);
-
-  // Calculate grid columns based on number of visible tabs
-  const gridCols = `grid-cols-${Math.min(tabs.length, 5)}`;
-
   return (
     <Tabs value={activeTab} onValueChange={(value) => onTabChange(value as CategoryType)} className="w-full">
-      <TabsList className={`w-full grid ${gridCols} h-12 bg-amber-100 dark:bg-amber-900/20 p-0`}>
+      <TabsList className="w-full grid grid-cols-5 h-12 bg-amber-100 dark:bg-amber-900/20 p-0">
         {tabs.map((tab) => (
           <TabsTrigger
             key={tab.value}

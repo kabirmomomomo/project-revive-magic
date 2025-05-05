@@ -246,11 +246,7 @@ const MenuPreview = () => {
           />
           
           <div className="mb-4">
-            <CategoryTabs 
-              activeTab={activeTab} 
-              onTabChange={handleTabChange} 
-              visibleTabs={restaurantToDisplay.visible_tabs}
-            />
+            <CategoryTabs activeTab={activeTab} onTabChange={handleTabChange} />
           </div>
 
           <div className={isMobile ? "px-2" : "px-6"}>

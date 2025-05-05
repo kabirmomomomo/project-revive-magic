@@ -41,7 +41,6 @@
     items: MenuItem[];
     icon?: string;
     type?: CategoryType;
-    is_tab_visible?: boolean; // New field to control tab visibility
   }
 
   export interface Restaurant {
@@ -56,5 +55,4 @@
     wifi_password?: string;
     opening_time?: string;
     closing_time?: string;
-    visible_tabs?: CategoryType[]; // New field to store which tabs are visible
   }
