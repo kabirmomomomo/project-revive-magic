@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { format } from 'date-fns';
 import { useOrders } from '@/contexts/OrderContext';
@@ -39,6 +38,13 @@ const TableOrders = () => {
           groups[order.session_code] = [];
         }
         groups[order.session_code].push(order);
+      } else if (order.table_id) {
+        // For orders without session code, group by table
+        const key = `table_${order.table_id}`;
+        if (!groups[key]) {
+          groups[key] = [];
+        }
+        groups[key].push(order);
       }
     });
     
@@ -136,18 +142,24 @@ const TableOrders = () => {
             <p>No orders placed at this table yet</p>
             <p className="text-sm mt-2">Orders will appear here in real-time</p>
           </div>
-        ) : hasSessionOrders ? (
+        ) : (
           // Display by session code
           <div className="space-y-4">
-            {Object.entries(ordersBySession).map(([code, sessionOrders]) => {
+            {Object.entries(ordersBySession).map(([codeOrKey, sessionOrders]) => {
+              const isSessionCode = !codeOrKey.startsWith('table_');
+              const tableId = isSessionCode ? '' : codeOrKey.replace('table_', '');
               const sessionTotal = calculateTotal(sessionOrders);
               const sessionItems = calculateTotalItems(sessionOrders);
               
               return (
-                <div key={code} className="pt-2 first:pt-0">
+                <div key={codeOrKey} className="pt-2 first:pt-0">
                   <h3 className="text-sm font-semibold text-purple-900 flex items-center gap-1 mb-2">
                     <FileStack className="h-4 w-4" />
-                    Session: {code}
+                    {isSessionCode ? (
+                      `Session: ${codeOrKey}`
+                    ) : (
+                      `Table ${tableId}`
+                    )}
                   </h3>
                   
                   {sessionOrders.map((order) => (
@@ -180,131 +192,16 @@ const TableOrders = () => {
                   ))}
                   
                   <div className="pt-3 flex justify-between font-medium border-t border-purple-100 mt-2">
-                    <span>Session Total</span>
+                    <span>{isSessionCode ? 'Session Total' : `Table ${tableId} Total`}</span>
                     <span className="text-purple-900">${sessionTotal.toFixed(2)}</span>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          // Display by main table and split bills
-          <div className="space-y-6">
-            {Object.entries(mainAndSplitBills).map(([baseTableId, { main, splits }]) => {
-              const hasSplits = Object.keys(splits).length > 0;
-              const mainTotal = calculateTotal(main);
-              const mainItems = calculateTotalItems(main);
-              
-              return (
-                <div key={baseTableId}>
-                  {/* Main Table Section */}
-                  <div className="mb-4">
-                    <h3 className="text-sm font-semibold text-purple-900 flex items-center gap-1 mb-2">
-                      <FileStack className="h-4 w-4" />
-                      Table {baseTableId}
-                    </h3>
-                    
-                    {main.map((order) => (
-                      <div key={order.id} className="py-3 first:pt-0 animate-fade-in">
-                        <div className="flex justify-between mb-1">
-                          <div className="text-sm font-medium text-purple-900 flex items-center gap-1">
-                            <Smartphone className="h-3 w-3" />
-                            {order.device_id.substring(0, 6)}...
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {format(new Date(order.created_at), 'h:mm a')}
-                          </div>
-                        </div>
-                        <div className="space-y-1">
-                          {order.items && order.items.map((item) => (
-                            <div key={item.id} className="flex justify-between text-sm">
-                              <span className="text-gray-600">
-                                {item.quantity}× {item.item_name}
-                                {item.variant_name && (
-                                  <span className="text-gray-500 text-xs"> ({item.variant_name})</span>
-                                )}
-                              </span>
-                              <span className="text-gray-900 font-medium">
-                                ${(item.price * item.quantity).toFixed(2)}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                    
-                    {main.length > 0 && (
-                      <div className="pt-3 flex justify-between font-medium">
-                        <span>Table {baseTableId} Total</span>
-                        <span className="text-purple-900">${mainTotal.toFixed(2)}</span>
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Split Bills Section */}
-                  {hasSplits && (
-                    <div className="pt-2 mt-2">
-                      <h3 className="text-sm font-semibold text-purple-900 mb-2">Split Bills for Table {baseTableId}</h3>
-                      
-                      {Object.entries(splits).map(([suffix, orders]) => {
-                        const splitTotal = calculateTotal(orders);
-                        const splitItems = calculateTotalItems(orders);
-                        
-                        return (
-                          <div key={suffix} className="mb-4 p-3 bg-purple-50 rounded-lg">
-                            <div className="flex justify-between items-center mb-2">
-                              <div className="text-sm font-medium text-purple-800">
-                                Table {baseTableId}{suffix}
-                              </div>
-                              <Badge variant="outline" className="bg-white text-purple-800 border-purple-200">
-                                {splitItems} {splitItems === 1 ? 'Item' : 'Items'}
-                              </Badge>
-                            </div>
-                            
-                            {orders.map((order) => (
-                              <div key={order.id} className="py-2 first:pt-0 text-sm">
-                                <div className="flex items-center gap-1 text-xs text-purple-700 mb-1">
-                                  <Smartphone className="h-3 w-3" />
-                                  {order.device_id.substring(0, 6)}...
-                                  <span className="ml-auto">
-                                    {format(new Date(order.created_at), 'h:mm a')}
-                                  </span>
-                                </div>
-                                
-                                <div className="space-y-1">
-                                  {order.items && order.items.map((item) => (
-                                    <div key={item.id} className="flex justify-between text-sm">
-                                      <span className="text-gray-600">
-                                        {item.quantity}× {item.item_name}
-                                        {item.variant_name && (
-                                          <span className="text-gray-500 text-xs"> ({item.variant_name})</span>
-                                        )}
-                                      </span>
-                                      <span className="text-gray-900 font-medium">
-                                        ${(item.price * item.quantity).toFixed(2)}
-                                      </span>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            ))}
-                            
-                            <div className="pt-2 flex justify-between font-medium text-sm border-t border-purple-200 mt-2">
-                              <span>Split Bill Total</span>
-                              <span className="text-purple-800">${splitTotal.toFixed(2)}</span>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
                 </div>
               );
             })}
             
             {/* Overall Total */}
             <div className="pt-4 flex justify-between font-medium text-lg border-t border-purple-100">
-              <span>Table Grand Total</span>
+              <span>Grand Total</span>
               <span className="text-purple-900">
                 ${calculateTotal(displayOrders).toFixed(2)}
               </span>

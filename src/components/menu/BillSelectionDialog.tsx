@@ -52,13 +52,54 @@ const BillSelectionDialog: React.FC<BillSelectionDialogProps> = ({
       
       console.log("Starting new bill with sessionId:", sessionId, "and code:", sessionCode);
       
+      // Generate a new table ID with letter suffix
+      let newTableId = tableId;
+      if (tableId) {
+        // Find existing tables with this base name
+        const { data: existingOrders } = await supabase
+          .from('orders')
+          .select('table_id')
+          .eq('restaurant_id', restaurantId)
+          .like('table_id', `${tableId}%`)
+          .order('created_at', { ascending: false });
+          
+        const baseTables = existingOrders?.filter(order => order.table_id === tableId) || [];
+        
+        // If there are already orders for this base table, create a new table with suffix
+        if (baseTables.length > 0) {
+          // Find existing split tables
+          const splitTables = existingOrders?.filter(order => 
+            order.table_id && 
+            order.table_id.startsWith(tableId) && 
+            order.table_id !== tableId
+          ) || [];
+          
+          // Find highest suffix
+          if (splitTables.length > 0) {
+            const suffixes = splitTables
+              .map(order => {
+                const suffix = order.table_id?.replace(tableId, '');
+                return suffix ? suffix.charCodeAt(0) : 0;
+              })
+              .filter(code => code > 0);
+              
+            if (suffixes.length > 0) {
+              const highestCode = Math.max(...suffixes);
+              // Use the next letter in the alphabet
+              newTableId = `${tableId}${String.fromCharCode(highestCode + 1)}`;
+            } else {
+              newTableId = `${tableId}A`;
+            }
+          } else {
+            newTableId = `${tableId}A`;
+          }
+        }
+      }
+      
       // Store this session in localStorage
       localStorage.setItem("billSessionId", sessionId);
       localStorage.setItem("billSessionCode", sessionCode);
       localStorage.setItem("billSessionOwner", "true");
-      
-      // For new bills, we'll create a new table identifier by adding a letter suffix
-      // This will be done in the OrderContext when placing an order
       
       // Store the session in Supabase
       const { error: insertError } = await supabase
@@ -67,7 +108,7 @@ const BillSelectionDialog: React.FC<BillSelectionDialogProps> = ({
           id: sessionId,
           code: sessionCode,
           restaurant_id: restaurantId,
-          table_id: tableId || null,
+          table_id: newTableId,
           is_active: true,
           created_at: new Date().toISOString()
         }]);

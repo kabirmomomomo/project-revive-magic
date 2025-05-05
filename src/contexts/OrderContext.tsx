@@ -238,60 +238,62 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const sessionCode = localStorage.getItem("billSessionCode");
       
       // Check if we should use a suffix for the table ID
-      // We want to use a suffix if the user has started a new bill
-      // We don't want to use a suffix if the user has joined an existing bill
       const isSessionOwner = localStorage.getItem("billSessionOwner") === "true";
       const isSplitBill = sessionId && isSessionOwner;
       
       let finalTableId = tableId || '';
       
-      if (isSplitBill) {
-        // This is a new bill, so give it a unique letter suffix
+      if (isSplitBill && tableId) {
+        // This is a new bill started by this user, so give it a unique letter suffix
         // First, check if there are existing bills for this table
-        if (tableId) {
-          const { data: existingOrders } = await supabase
+        const { data: existingOrders } = await supabase
+          .from('orders')
+          .select('table_id')
+          .eq('restaurant_id', restaurantId)
+          .eq('table_id', tableId)
+          .is('session_id', null)  // Look for orders without a session (original table)
+          .limit(1);
+          
+        // If this is the first bill for this table, add 'A' suffix
+        if (!existingOrders || existingOrders.length === 0) {
+          finalTableId = `${tableId}A`;
+        } else {
+          // Find the highest letter suffix used so far
+          const { data: existingSplitBills } = await supabase
             .from('orders')
             .select('table_id')
             .eq('restaurant_id', restaurantId)
-            .eq('table_id', tableId)
-            .is('session_id', null)  // Look for orders without a session (original table)
-            .limit(1);
+            .like('table_id', `${tableId}%`)
+            .not('table_id', 'eq', tableId);
             
-          // If this is the first bill for this table, add 'A' suffix
-          if (!existingOrders || existingOrders.length === 0) {
-            finalTableId = `${tableId}A`;
-          } else {
-            // Find the highest letter suffix used so far
-            const { data: existingSplitBills } = await supabase
-              .from('orders')
-              .select('table_id')
-              .eq('restaurant_id', restaurantId)
-              .like('table_id', `${tableId}%`)
-              .not('table_id', 'eq', tableId);
+          if (existingSplitBills && existingSplitBills.length > 0) {
+            // Extract suffixes and find the next letter
+            const suffixes = existingSplitBills
+              .map(order => {
+                const suffix = order.table_id?.replace(tableId || '', '');
+                return suffix ? suffix.charCodeAt(0) : 0;
+              })
+              .filter(code => code > 0);
               
-            if (existingSplitBills && existingSplitBills.length > 0) {
-              // Extract suffixes and find the next letter
-              const suffixes = existingSplitBills
-                .map(order => {
-                  const suffix = order.table_id?.replace(tableId || '', '');
-                  return suffix ? suffix.charCodeAt(0) : 0;
-                })
-                .filter(code => code > 0);
-                
-              if (suffixes.length > 0) {
-                const highestCode = Math.max(...suffixes);
-                // Use the next letter in the alphabet
-                finalTableId = `${tableId}${String.fromCharCode(highestCode + 1)}`;
-              } else {
-                finalTableId = `${tableId}A`;
-              }
+            if (suffixes.length > 0) {
+              const highestCode = Math.max(...suffixes);
+              // Use the next letter in the alphabet
+              finalTableId = `${tableId}${String.fromCharCode(highestCode + 1)}`;
             } else {
               finalTableId = `${tableId}A`;
             }
+          } else {
+            finalTableId = `${tableId}A`;
           }
         }
+        
+        // Store the table ID with the session so future orders use the same table ID
+        await supabase
+          .from('bill_sessions')
+          .update({ table_id: finalTableId })
+          .eq('id', sessionId);
       } else if (sessionId && !isSessionOwner) {
-        // For joined bills, we need to find what table the session is associated with
+        // For joined bills, find the table ID that the session is already using
         const { data: sessionData } = await supabase
           .from('bill_sessions')
           .select('table_id')
@@ -299,7 +301,28 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           .single();
           
         if (sessionData && sessionData.table_id) {
+          // Use the existing table ID associated with this session
           finalTableId = sessionData.table_id;
+        } else if (sessionCode) {
+          // If session exists but doesn't have a table ID yet, check if any orders with this session code have a table ID
+          const { data: existingOrders } = await supabase
+            .from('orders')
+            .select('table_id')
+            .eq('restaurant_id', restaurantId)
+            .eq('session_code', sessionCode)
+            .not('table_id', 'is', null)
+            .order('created_at', { ascending: false })
+            .limit(1);
+            
+          if (existingOrders && existingOrders.length > 0 && existingOrders[0].table_id) {
+            finalTableId = existingOrders[0].table_id;
+            
+            // Update the session with this table ID for future reference
+            await supabase
+              .from('bill_sessions')
+              .update({ table_id: finalTableId })
+              .eq('id', sessionId);
+          }
         }
       }
       
