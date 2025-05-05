@@ -125,7 +125,7 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
       activeCategoryId,
       activeItem.id,
       "dietary_type",
-      value === "none" ? null : value as "veg" | "non-veg"
+      value === "none" ? null : value
     );
     
     // Log the change to ensure it's being properly captured
@@ -219,7 +219,7 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="item-price">Price</Label>
+                    <Label htmlFor="item-price">Price (₹)</Label>
                     <Input
                       id="item-price"
                       ref={priceInputRef}
@@ -235,7 +235,7 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
                     />
                   </div>
                   <div>
-                    <Label htmlFor="item-old-price">Old Price</Label>
+                    <Label htmlFor="item-old-price">Old Price (₹)</Label>
                     <Input
                       id="item-old-price"
                       value={activeItem.old_price || ""}
@@ -354,7 +354,7 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
                         </div>
                         <div>
                           <Label htmlFor={`variant-price-${variant.id}`}>
-                            Variant Price
+                            Variant Price (₹)
                           </Label>
                           <Input
                             id={`variant-price-${variant.id}`}
@@ -465,7 +465,7 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
                                   </div>
                                   <div>
                                     <Label htmlFor={`option-price-${option.id}`}>
-                                      Option Price
+                                      Option Price (₹)
                                     </Label>
                                     <Input
                                       id={`option-price-${option.id}`}

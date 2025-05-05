@@ -60,7 +60,7 @@ const MenuPreview = () => {
   const tableId = searchParams.get('table');
   const [attemptedDatabaseSetup, setAttemptedDatabaseSetup] = useState(false);
   const [isDbError, setIsDbError] = useState(false);
-  const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({});
+  const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({}); // Updated state type
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<CategoryType>("food");
   const isMobile = useIsMobile();

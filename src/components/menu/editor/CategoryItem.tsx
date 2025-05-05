@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -183,7 +184,7 @@ const CategoryItemsList: React.FC<CategoryItemsListProps> = ({
                 {item.name}
               </p>
               <p className="text-xs text-muted-foreground">
-                ${parseFloat(item.price).toFixed(2)}
+                ₹{parseFloat(item.price).toFixed(2)}
               </p>
             </div>
             <div className="flex items-center gap-1">
