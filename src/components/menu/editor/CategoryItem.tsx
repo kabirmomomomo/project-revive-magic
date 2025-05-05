@@ -115,14 +115,14 @@ const CategoryItem: React.FC<CategoryItemProps> = ({
           <div className="flex items-center gap-1">
             {/* Category Type Selection */}
             <Select
-              value={category.type || ""}
+              value={category.type || "none"}
               onValueChange={handleCategoryTypeChange}
             >
               <SelectTrigger className="h-7 w-[110px] text-xs">
                 <SelectValue placeholder="Select type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">No type</SelectItem>
+                <SelectItem value="none">No type</SelectItem>
                 <SelectItem value="food">Food</SelectItem>
                 <SelectItem value="liquor">Liquor</SelectItem>
                 <SelectItem value="beverages">Beverages</SelectItem>

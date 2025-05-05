@@ -164,10 +164,13 @@ const MenuEditor = () => {
 
   const updateCategory = (id: string, name: string, type?: CategoryType) => {
     setRestaurant(prev => {
+      // Convert empty type to "none" for select component compatibility
+      const finalType = type === "" ? "none" : type;
+      
       const newState = {
         ...prev,
         categories: prev.categories.map((category) =>
-          category.id === id ? { ...category, name, type } : category
+          category.id === id ? { ...category, name, type: finalType } : category
         ),
       };
       
@@ -177,7 +180,7 @@ const MenuEditor = () => {
       return newState;
     });
     
-    console.log(`Updating category ${id} with name: ${name} and type: ${type || 'all'}`);
+    console.log(`Updating category ${id} with name: ${name} and type: ${type || 'none'}`);
   };
 
   const deleteCategory = (id: string) => {
