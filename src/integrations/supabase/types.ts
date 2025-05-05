@@ -9,6 +9,33 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      bill_sessions: {
+        Row: {
+          code: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          restaurant_id: string
+          table_id: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          id: string
+          is_active?: boolean | null
+          restaurant_id: string
+          table_id?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          restaurant_id?: string
+          table_id?: string | null
+        }
+        Relationships: []
+      }
       cart_item_customizations: {
         Row: {
           cart_item_id: string
@@ -364,9 +391,12 @@ export type Database = {
           created_at: string | null
           device_id: string | null
           id: string
+          is_split_bill: boolean | null
           payment_method: string | null
           payment_status: string | null
           restaurant_id: string
+          session_code: string | null
+          session_id: string | null
           status: string
           stripe_session_id: string | null
           table_id: string | null
@@ -378,9 +408,12 @@ export type Database = {
           created_at?: string | null
           device_id?: string | null
           id?: string
+          is_split_bill?: boolean | null
           payment_method?: string | null
           payment_status?: string | null
           restaurant_id: string
+          session_code?: string | null
+          session_id?: string | null
           status?: string
           stripe_session_id?: string | null
           table_id?: string | null
@@ -392,9 +425,12 @@ export type Database = {
           created_at?: string | null
           device_id?: string | null
           id?: string
+          is_split_bill?: boolean | null
           payment_method?: string | null
           payment_status?: string | null
           restaurant_id?: string
+          session_code?: string | null
+          session_id?: string | null
           status?: string
           stripe_session_id?: string | null
           table_id?: string | null

@@ -52,33 +52,6 @@ const BillSelectionDialog: React.FC<BillSelectionDialogProps> = ({
       
       console.log("Starting new bill with sessionId:", sessionId, "and code:", sessionCode);
       
-      // Create bill_sessions table if it doesn't exist
-      const { error: checkError } = await supabase
-        .from('bill_sessions')
-        .select('id')
-        .limit(1)
-        .maybeSingle();
-        
-      if (checkError && checkError.code === '42P01') {
-        // Table doesn't exist, create it
-        const { error: createError } = await supabase.rpc('create_table_if_not_exists', {
-          table_name: 'bill_sessions',
-          table_definition: `
-            id UUID PRIMARY KEY, 
-            code TEXT NOT NULL, 
-            restaurant_id UUID NOT NULL,
-            table_id TEXT,
-            is_active BOOLEAN DEFAULT true,
-            created_at TIMESTAMPTZ DEFAULT now()
-          `
-        });
-        
-        if (createError) {
-          console.error("Error creating bill_sessions table:", createError);
-          throw new Error("Failed to create sessions table");
-        }
-      }
-      
       // Store this session in localStorage
       localStorage.setItem("billSessionId", sessionId);
       localStorage.setItem("billSessionCode", sessionCode);
@@ -98,7 +71,7 @@ const BillSelectionDialog: React.FC<BillSelectionDialogProps> = ({
         
       if (insertError) {
         console.error("Error inserting bill session:", insertError);
-        throw insertError;
+        throw new Error(`Failed to create bill session: ${insertError.message}`);
       }
       
       // Close dialog and continue
