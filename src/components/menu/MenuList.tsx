@@ -11,6 +11,7 @@ interface MenuListProps {
   toggleCategory: (categoryId: string) => void;
   searchQuery?: string;
   activeTab?: CategoryType;
+  ordersEnabled?: boolean;
 }
 
 const MenuList: React.FC<MenuListProps> = ({ 
@@ -18,7 +19,8 @@ const MenuList: React.FC<MenuListProps> = ({
   openCategories, 
   toggleCategory,
   searchQuery = "",
-  activeTab = "all"
+  activeTab = "all",
+  ordersEnabled = true
 }) => {
   const isMobile = useIsMobile();
   
@@ -85,6 +87,7 @@ const MenuList: React.FC<MenuListProps> = ({
           isOpen={openCategories[category.id] || !!searchQuery}
           toggleCategory={toggleCategory}
           categoryIndex={categoryIndex}
+          ordersEnabled={ordersEnabled}
         />
       ))}
     </div>

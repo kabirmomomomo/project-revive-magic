@@ -1,15 +1,14 @@
+
 import { motion } from 'framer-motion';
 
 const teamMembers = [
   {
     name: "Harshit Mishra",
-    // role: "Founder & CEO",
     image: "https://media.licdn.com/dms/image/v2/D5603AQHAAg2mYKjxXw/profile-displayphoto-shrink_400_400/B56ZaQtoB2GUAk-/0/1746184605448?e=1751500800&v=beta&t=1hFqwl3bwF0CgtjzWg6alx7cs_qXUrvYKmrtCO1f2xQ",
     description: "NIT ALLAHABAD-CSED'24"
   },
   {
     name: "Ujjwal Tyagi",
-    // role: "Head Chef",
     image: "https://media.licdn.com/dms/image/v2/D5603AQHySsOdEviteQ/profile-displayphoto-shrink_800_800/profile-displayphoto-shrink_800_800/0/1725455673163?e=1751500800&v=beta&t=-Q_25BGCCiMJFVSNvOD_KCugzNSKSc4OyRHhRqcfAD0",
     description: "NIT ALLAHABAD CSE'24"
   }
@@ -52,7 +51,7 @@ const OurTeam = () => {
                 className="w-24 h-24 rounded-full object-cover border-4 border-blue-400 mb-4 shadow-md"
               />
               <h3 className="text-xl font-semibold text-white">{member.name}</h3>
-              <div className="text-sm text-blue-300 font-medium mb-2">{member.role}</div>
+              {/* Remove the reference to role property since it doesn't exist */}
               <p className="text-gray-300 text-sm">{member.description}</p>
             </motion.div>
           ))}
