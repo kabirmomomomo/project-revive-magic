@@ -1,3 +1,4 @@
+
 import { supabase } from '@/lib/supabase';
 import { v4 as uuidv4 } from 'uuid';
 import { toast } from '@/components/ui/sonner';
@@ -313,6 +314,8 @@ export const getRestaurantById = async (id: string): Promise<RestaurantUI | null
   const result = {
     ...restaurant,
     categories: categoriesWithItems,
+    // Map the database column name to our interface property
+    ordersEnabled: restaurant.orders_enabled
   };
 
   // Cache the result
@@ -381,7 +384,7 @@ export const saveRestaurantMenu = async (restaurant: RestaurantUI) => {
     const { data: { user } } = await supabase.auth.getUser();
     const userId = user?.id || null;
     
-    // First update the restaurant details - ensure ordersEnabled is included
+    // Map our interface property to the database column name
     const { error: restaurantError } = await supabase
       .from('restaurants')
       .upsert({
@@ -395,7 +398,7 @@ export const saveRestaurantMenu = async (restaurant: RestaurantUI) => {
         wifi_password,
         opening_time,
         closing_time,
-        ordersEnabled,
+        orders_enabled: ordersEnabled,
         payment_qr_code,
         upi_id,
         user_id: userId,

@@ -415,6 +415,7 @@ export type Database = {
           location: string | null
           name: string
           opening_time: string | null
+          orders_enabled: boolean | null
           payment_qr_code: string | null
           phone: string | null
           table_count: number | null
@@ -433,6 +434,7 @@ export type Database = {
           location?: string | null
           name: string
           opening_time?: string | null
+          orders_enabled?: boolean | null
           payment_qr_code?: string | null
           phone?: string | null
           table_count?: number | null
@@ -451,6 +453,7 @@ export type Database = {
           location?: string | null
           name?: string
           opening_time?: string | null
+          orders_enabled?: boolean | null
           payment_qr_code?: string | null
           phone?: string | null
           table_count?: number | null
