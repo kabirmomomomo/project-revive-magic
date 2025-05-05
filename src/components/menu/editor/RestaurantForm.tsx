@@ -39,14 +39,17 @@ const RestaurantForm: React.FC<RestaurantFormProps> = ({ restaurant, setRestaura
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-x-0">
         <CardTitle className="text-base md:text-lg font-semibold">Restaurant Details</CardTitle>
-        <CollapsibleTrigger
+        <Button
           onClick={() => setIsOpen(!isOpen)}
           className="rounded-md border p-1.5 hover:bg-accent hover:text-accent-foreground"
+          variant="ghost"
+          size="icon"
         >
           <ChevronsUpDown className="h-4 w-4" />
           <span className="sr-only">Toggle</span>
-        </CollapsibleTrigger>
+        </Button>
       </CardHeader>
+      
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
         <CollapsibleContent>
           <CardContent className="space-y-4">
