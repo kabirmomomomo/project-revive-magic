@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { CaretSortIcon } from "@radix-ui/react-icons";
+import { ChevronSort } from "lucide-react"; // Replace with lucide-react icon
 import { useIsMobile } from "@/hooks/use-mobile";
 import TabsVisibilityManager from "./TabsVisibilityManager";
 import { Restaurant, CategoryType } from "@/types/menu";
@@ -43,7 +43,7 @@ const RestaurantForm: React.FC<RestaurantFormProps> = ({ restaurant, setRestaura
           onClick={() => setIsOpen(!isOpen)}
           className="rounded-md border p-1.5 hover:bg-accent hover:text-accent-foreground"
         >
-          <CaretSortIcon className="h-4 w-4" />
+          <ChevronSort className="h-4 w-4" />
           <span className="sr-only">Toggle</span>
         </CollapsibleTrigger>
       </CardHeader>

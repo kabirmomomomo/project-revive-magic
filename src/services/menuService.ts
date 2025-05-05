@@ -55,11 +55,12 @@ export interface RestaurantUI {
   categories: MenuCategoryUI[];
   image_url?: string;
   google_review_link?: string;
-  location?: string;
+  location?: string; 
   phone?: string;
   wifi_password?: string;
   opening_time?: string;
   closing_time?: string;
+  visible_tabs?: CategoryType[]; // Add visible_tabs property to match Restaurant type
   payment_qr_code?: string;
   upi_id?: string;
 }
@@ -374,7 +375,7 @@ export const saveRestaurantMenu = async (restaurant: RestaurantUI) => {
   // Invalidate cache
   cache.delete(`restaurant_${restaurant.id}`);
 
-  const { id, name, description, categories, image_url, google_review_link, location, phone, wifi_password, opening_time, closing_time, payment_qr_code, upi_id } = restaurant;
+  const { id, name, description, categories, image_url, google_review_link, location, phone, wifi_password, opening_time, closing_time, payment_qr_code, upi_id, visible_tabs } = restaurant;
   
   try {
     const { data: { user } } = await supabase.auth.getUser();

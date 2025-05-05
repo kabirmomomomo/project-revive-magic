@@ -1,15 +1,16 @@
+
 import { motion } from 'framer-motion';
 
 const teamMembers = [
   {
     name: "Harshit Mishra",
-    // role: "Founder & CEO",
+    role: "", // Add empty role property
     image: "https://media.licdn.com/dms/image/v2/D5603AQHAAg2mYKjxXw/profile-displayphoto-shrink_400_400/B56ZaQtoB2GUAk-/0/1746184605448?e=1751500800&v=beta&t=1hFqwl3bwF0CgtjzWg6alx7cs_qXUrvYKmrtCO1f2xQ",
     description: "NIT ALLAHABAD-CSED'24"
   },
   {
     name: "Ujjwal Tyagi",
-    // role: "Head Chef",
+    role: "", // Add empty role property
     image: "https://media.licdn.com/dms/image/v2/D5603AQHySsOdEviteQ/profile-displayphoto-shrink_800_800/profile-displayphoto-shrink_800_800/0/1725455673163?e=1751500800&v=beta&t=-Q_25BGCCiMJFVSNvOD_KCugzNSKSc4OyRHhRqcfAD0",
     description: "NIT ALLAHABAD CSE'24"
   }
