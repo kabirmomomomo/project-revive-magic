@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/components/ui/sonner';
@@ -102,7 +101,9 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const fetchTableOrders = async (restaurantId: string, tableId: string) => {
     try {
       console.log('Fetching orders for restaurant:', restaurantId, 'table:', tableId);
-      const { data, error } = await supabase
+      
+      // First try to get exact match orders
+      const { data: exactMatches, error: exactError } = await supabase
         .from('orders')
         .select(`
           *,
@@ -112,13 +113,33 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         .eq('table_id', tableId)
         .order('created_at', { ascending: false });
         
-      if (error) {
-        console.error('Error fetching table orders:', error);
-        throw error;
+      if (exactError) {
+        console.error('Error fetching exact match table orders:', exactError);
+        throw exactError;
       }
       
-      console.log('Table orders fetched:', data?.length || 0);
-      setTableOrders(data || []);
+      // Then get orders with table ID as prefix (like Table1A, Table1B)
+      const { data: prefixMatches, error: prefixError } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          items:order_items(*)
+        `)
+        .eq('restaurant_id', restaurantId)
+        .like('table_id', `${tableId}%`)
+        .not('table_id', 'eq', tableId)
+        .order('created_at', { ascending: false });
+        
+      if (prefixError) {
+        console.error('Error fetching prefix match table orders:', prefixError);
+        throw prefixError;
+      }
+      
+      // Combine results with exact matches first
+      const allTableOrders = [...(exactMatches || []), ...(prefixMatches || [])];
+      
+      console.log('Table orders fetched:', allTableOrders.length || 0);
+      setTableOrders(allTableOrders || []);
     } catch (error) {
       console.error('Error in fetchTableOrders:', error);
       toast.error('Failed to load table orders');
@@ -216,11 +237,71 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       // Get session code if available
       const sessionCode = localStorage.getItem("billSessionCode");
       
-      // Check if this is a split bill (separate from the group)
-      const isSplitBill = sessionId ? localStorage.getItem("billSessionOwner") !== "true" : false;
+      // Check if we should use a suffix for the table ID
+      // We want to use a suffix if the user has started a new bill
+      // We don't want to use a suffix if the user has joined an existing bill
+      const isSessionOwner = localStorage.getItem("billSessionOwner") === "true";
+      const isSplitBill = sessionId && isSessionOwner;
       
-      // Generate split code for table suffix if needed (A, B, C, etc.)
-      const splitCode = isSplitBill ? String.fromCharCode(65 + Math.floor(Math.random() * 26)) : '';
+      let finalTableId = tableId || '';
+      
+      if (isSplitBill) {
+        // This is a new bill, so give it a unique letter suffix
+        // First, check if there are existing bills for this table
+        if (tableId) {
+          const { data: existingOrders } = await supabase
+            .from('orders')
+            .select('table_id')
+            .eq('restaurant_id', restaurantId)
+            .eq('table_id', tableId)
+            .is('session_id', null)  // Look for orders without a session (original table)
+            .limit(1);
+            
+          // If this is the first bill for this table, add 'A' suffix
+          if (!existingOrders || existingOrders.length === 0) {
+            finalTableId = `${tableId}A`;
+          } else {
+            // Find the highest letter suffix used so far
+            const { data: existingSplitBills } = await supabase
+              .from('orders')
+              .select('table_id')
+              .eq('restaurant_id', restaurantId)
+              .like('table_id', `${tableId}%`)
+              .not('table_id', 'eq', tableId);
+              
+            if (existingSplitBills && existingSplitBills.length > 0) {
+              // Extract suffixes and find the next letter
+              const suffixes = existingSplitBills
+                .map(order => {
+                  const suffix = order.table_id?.replace(tableId || '', '');
+                  return suffix ? suffix.charCodeAt(0) : 0;
+                })
+                .filter(code => code > 0);
+                
+              if (suffixes.length > 0) {
+                const highestCode = Math.max(...suffixes);
+                // Use the next letter in the alphabet
+                finalTableId = `${tableId}${String.fromCharCode(highestCode + 1)}`;
+              } else {
+                finalTableId = `${tableId}A`;
+              }
+            } else {
+              finalTableId = `${tableId}A`;
+            }
+          }
+        }
+      } else if (sessionId && !isSessionOwner) {
+        // For joined bills, we need to find what table the session is associated with
+        const { data: sessionData } = await supabase
+          .from('bill_sessions')
+          .select('table_id')
+          .eq('id', sessionId)
+          .single();
+          
+        if (sessionData && sessionData.table_id) {
+          finalTableId = sessionData.table_id;
+        }
+      }
       
       // Prepare order data
       const orderData = {
@@ -231,8 +312,8 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       } as any;
       
       // Only add table_id if it exists
-      if (tableId) {
-        orderData.table_id = tableId + (isSplitBill ? splitCode : '');
+      if (finalTableId) {
+        orderData.table_id = finalTableId;
         console.log('Adding table_id to order:', orderData.table_id);
       }
       

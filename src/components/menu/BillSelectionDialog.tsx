@@ -57,6 +57,9 @@ const BillSelectionDialog: React.FC<BillSelectionDialogProps> = ({
       localStorage.setItem("billSessionCode", sessionCode);
       localStorage.setItem("billSessionOwner", "true");
       
+      // For new bills, we'll create a new table identifier by adding a letter suffix
+      // This will be done in the OrderContext when placing an order
+      
       // Store the session in Supabase
       const { error: insertError } = await supabase
         .from("bill_sessions")
