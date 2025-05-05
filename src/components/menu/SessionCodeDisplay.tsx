@@ -12,14 +12,19 @@ interface SessionCodeDisplayProps {
 const SessionCodeDisplay: React.FC<SessionCodeDisplayProps> = ({ sessionCode }) => {
   const [copied, setCopied] = useState(false);
   
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(sessionCode);
-    setCopied(true);
-    toast.success("Code copied to clipboard!");
-    
-    setTimeout(() => {
-      setCopied(false);
-    }, 2000);
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(sessionCode);
+      setCopied(true);
+      toast.success("Code copied to clipboard!");
+      
+      setTimeout(() => {
+        setCopied(false);
+      }, 2000);
+    } catch (err) {
+      console.error("Failed to copy code:", err);
+      toast.error("Failed to copy code. Try again.");
+    }
   };
   
   return (
