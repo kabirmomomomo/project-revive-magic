@@ -12,6 +12,7 @@ import LoadingAnimation from '../components/LoadingAnimation';
 import { initScrollEffects } from '../utils/scroll';
 import DigitalMenuShowcase from '@/components/DigitalMenuShowcase';
 import TestimonialSection from './TestimonialSection';
+import OurTeam from '../components/OurTeam';
 
 const Index = () => {
   const [loading, setLoading] = useState(true);
@@ -66,10 +67,12 @@ const Index = () => {
       <Hero />
       <About />
       <WorkShowcase />
+     
       {/* <Marquee /> */}
       <DigitalMenuShowcase/>
       <TestimonialSection/>
-      <Process />
+      {/* <Process /> */}
+      <OurTeam />
       <Contact />
       <Footer />
     </div>
