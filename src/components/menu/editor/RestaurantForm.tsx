@@ -1,155 +1,155 @@
 
-import React, { useRef, useState } from "react";
-import { Label } from "@/components/ui/label";
+import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { ImagePlus, ChevronDown } from "lucide-react";
-import { RestaurantUI } from "@/services/menuService";
-import { uploadRestaurantImage } from "@/utils/restaurantImageUpload";
-import { uploadPaymentQR } from "@/utils/paymentQrUpload";
-import { toast } from "@/components/ui/sonner";
-
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { CaretSortIcon } from "@radix-ui/react-icons";
+import { useIsMobile } from "@/hooks/use-mobile";
+import TabsVisibilityManager from "./TabsVisibilityManager";
+import { Restaurant, CategoryType } from "@/types/menu";
 
 interface RestaurantFormProps {
-  restaurant: RestaurantUI;
-  setRestaurant: React.Dispatch<React.SetStateAction<RestaurantUI>>;
+  restaurant: Restaurant;
+  setRestaurant: React.Dispatch<React.SetStateAction<Restaurant>>;
 }
 
-const RestaurantForm: React.FC<RestaurantFormProps> = ({ restaurant, setRestaurant })  => {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const qrInputRef = useRef<HTMLInputElement>(null);
+const RestaurantForm: React.FC<RestaurantFormProps> = ({ restaurant, setRestaurant }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const isMobile = useIsMobile();
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const url = await uploadRestaurantImage(file);
-    if (url) {
-      setRestaurant({ ...restaurant, image_url: url });
-      toast.success("Restaurant image updated successfully");
-    }
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setRestaurant(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
-  const handleQRUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const url = await uploadPaymentQR(file);
-    if (url) {
-      setRestaurant({ ...restaurant, payment_qr_code: url });
-      toast.success("Payment QR code updated successfully");
-    }
+  const handleVisibleTabsChange = (tabs: CategoryType[]) => {
+    setRestaurant(prev => ({
+      ...prev,
+      visible_tabs: tabs
+    }));
   };
 
   return (
-    <div className="space-y-4">
-      <div 
-        className="flex items-center justify-between p-2 bg-blue-100 rounded-lg cursor-pointer"
-        onClick={() => setIsExpanded(!isExpanded)}
-        role="button"
-        tabIndex={0}
-      >
-        <h2 className="text-xl font-semibold">Restaurant Details</h2>
-        <ChevronDown className={`w-5 h-5 transform transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-      </div>
-
-      {isExpanded && (
-        <div className="space-y-4 animate-in fade-in-50">
-          <div className="grid gap-4 md:grid-cols-2 md:gap-8">
-            {/* Restaurant Image Section */}
-            <div className="space-y-2">
-              <Label>Restaurant Image</Label>
-              <div className="flex items-center gap-4">
-                {restaurant.image_url ? (
-                  <div className="relative group w-full aspect-square">
-                    <img 
-                      src={restaurant.image_url} 
-                      alt={restaurant.name} 
-                      className="w-full h-full object-cover rounded-lg border" 
-                    />
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      Change
-                    </Button>
-                  </div>
-                ) : (
-                  <Button
-                    variant="outline"
-                    className="w-full aspect-square flex flex-col items-center justify-center gap-2"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    <ImagePlus className="w-8 h-8" />
-                    <span className="text-sm">Upload Image</span>
-                  </Button>
-                )}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleImageUpload}
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-x-0">
+        <CardTitle className="text-base md:text-lg font-semibold">Restaurant Details</CardTitle>
+        <CollapsibleTrigger
+          onClick={() => setIsOpen(!isOpen)}
+          className="rounded-md border p-1.5 hover:bg-accent hover:text-accent-foreground"
+        >
+          <CaretSortIcon className="h-4 w-4" />
+          <span className="sr-only">Toggle</span>
+        </CollapsibleTrigger>
+      </CardHeader>
+      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+        <CollapsibleContent>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Restaurant Name</Label>
+                <Input
+                  id="name"
+                  name="name"
+                  value={restaurant.name}
+                  onChange={handleChange}
+                  className="w-full"
                 />
               </div>
-            </div>
 
-            {/* QR Code Section */}
-            <div className="space-y-2">
-              <Label>Payment QR Code</Label>
-              <div className="flex items-center gap-4">
-                {restaurant.payment_qr_code ? (
-                  <div className="relative group w-full aspect-square">
-                    <img 
-                      src={restaurant.payment_qr_code} 
-                      alt="Payment QR" 
-                      className="w-full h-full object-cover rounded-lg border" 
-                    />
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => qrInputRef.current?.click()}
-                    >
-                      Change
-                    </Button>
-                  </div>
-                ) : (
-                  <Button
-                    variant="outline"
-                    className="w-full aspect-square flex flex-col items-center justify-center gap-2"
-                    onClick={() => qrInputRef.current?.click()}
-                  >
-                    <ImagePlus className="w-8 h-8" />
-                    <span className="text-sm">Upload QR</span>
-                  </Button>
-                )}
-                <input
-                  ref={qrInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleQRUpload}
+              <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  name="description"
+                  value={restaurant.description}
+                  onChange={handleChange}
+                  className="w-full min-h-[80px]"
                 />
               </div>
-            </div>
-          </div>
 
-          {/* UPI ID Section */}
-          <div className="space-y-2">
-            <Label>UPI ID</Label>
-            <Input
-              value={restaurant.upi_id || ''}
-              onChange={(e) => setRestaurant({ ...restaurant, upi_id: e.target.value })}
-              placeholder="Enter your UPI id."
-            />
-          </div>
-        </div>
-      )}
-    </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="location">Location</Label>
+                  <Input
+                    id="location"
+                    name="location"
+                    value={restaurant.location || ""}
+                    onChange={handleChange}
+                    placeholder="Restaurant address"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Phone Number</Label>
+                  <Input
+                    id="phone"
+                    name="phone"
+                    value={restaurant.phone || ""}
+                    onChange={handleChange}
+                    placeholder="Contact number"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="opening_time">Opening Time</Label>
+                  <Input
+                    id="opening_time"
+                    name="opening_time"
+                    value={restaurant.opening_time || ""}
+                    onChange={handleChange}
+                    placeholder="e.g., 9:00 AM"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="closing_time">Closing Time</Label>
+                  <Input
+                    id="closing_time"
+                    name="closing_time"
+                    value={restaurant.closing_time || ""}
+                    onChange={handleChange}
+                    placeholder="e.g., 10:00 PM"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="google_review_link">Google Review Link</Label>
+                <Input
+                  id="google_review_link"
+                  name="google_review_link"
+                  value={restaurant.google_review_link || ""}
+                  onChange={handleChange}
+                  placeholder="Link to your Google reviews"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="wifi_password">Wi-Fi Password</Label>
+                <Input
+                  id="wifi_password"
+                  name="wifi_password"
+                  value={restaurant.wifi_password || ""}
+                  onChange={handleChange}
+                  placeholder="Password for customer Wi-Fi"
+                />
+              </div>
+
+              <TabsVisibilityManager 
+                visibleTabs={restaurant.visible_tabs || []}
+                onVisibleTabsChange={handleVisibleTabsChange}
+              />
+            </div>
+          </CardContent>
+        </CollapsibleContent>
+      </Collapsible>
+    </Card>
   );
 };
 

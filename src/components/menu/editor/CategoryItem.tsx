@@ -1,14 +1,15 @@
 
-import React from "react";
+import React, { useState } from "react";
+import { ChevronDown, ChevronUp, Edit, Trash, ChevronRight, Plus, ArrowUp, ArrowDown, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Card } from "@/components/ui/card";
 import { MenuCategoryUI, MenuItemUI } from "@/services/menuService";
-import { ChevronUp, ChevronDown, MoveUp, MoveDown, Trash2, PlusCircle, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { CategoryType } from "@/types/menu";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface CategoryItemProps {
   category: MenuCategoryUI;
@@ -37,196 +38,256 @@ const CategoryItem: React.FC<CategoryItemProps> = ({
   moveMenuItem,
   deleteMenuItem,
   setActiveItemId,
-  categoriesLength,
+  categoriesLength
 }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedName, setEditedName] = useState(category.name);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEditedName(e.target.value);
+  };
+
+  const handleSaveName = () => {
+    if (editedName.trim()) {
+      updateCategory(category.id, editedName, category.type as CategoryType);
+      setIsEditing(false);
+    }
+  };
+
   const handleCategoryTypeChange = (value: string) => {
-    console.log(`Changing category type to: ${value}`);
     updateCategory(category.id, category.name, value as CategoryType);
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      handleSaveName();
+    } else if (e.key === "Escape") {
+      setEditedName(category.name);
+      setIsEditing(false);
+    }
+  };
+
   return (
-    <div className="border rounded-lg p-2 md:p-3 space-y-2 transition-all duration-200 hover:shadow-sm">
-      <div className="flex justify-between items-center gap-2">
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <button 
+    <Card className="overflow-hidden">
+      <div className="flex items-center justify-between p-3">
+        <div className="flex-1 flex items-center">
+          <CollapsibleTrigger
             onClick={() => toggleExpand(category.id)}
-            className="text-gray-500 hover:text-gray-700 transition-colors duration-200 p-1"
+            className="mr-2"
           >
             {isExpanded ? (
-              <ChevronUp className="h-4 w-4 md:h-5 md:w-5" />
+              <ChevronDown className="h-4 w-4" />
             ) : (
-              <ChevronDown className="h-4 w-4 md:h-5 md:w-5" />
+              <ChevronRight className="h-4 w-4" />
             )}
-          </button>
-          <Input
-            id={`category-${category.id}`}
-            value={category.name}
-            onChange={(e) => updateCategory(category.id, e.target.value, category.type)}
-            className="h-8 text-sm md:text-base"
-            placeholder="Category Name"
-          />
+          </CollapsibleTrigger>
+
+          {isEditing ? (
+            <div className="flex-1 flex gap-2">
+              <Input
+                value={editedName}
+                onChange={handleNameChange}
+                onBlur={handleSaveName}
+                onKeyDown={handleKeyDown}
+                autoFocus
+                className="h-7 py-1"
+              />
+              <Button
+                onClick={handleSaveName}
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+              >
+                <Check className="h-4 w-4" />
+              </Button>
+            </div>
+          ) : (
+            <div className="font-medium text-sm md:text-base line-clamp-1 mr-2">
+              {category.name}
+            </div>
+          )}
         </div>
-        
+
         <div className="flex items-center gap-1">
-          <Select 
-            value={category.type || "all"} 
+          {/* Category Type Selection */}
+          <Select
+            value={category.type || ""}
             onValueChange={handleCategoryTypeChange}
           >
-            <SelectTrigger className="h-8 w-24 md:w-28">
-              <SelectValue placeholder="Type" />
+            <SelectTrigger className="h-7 w-[110px] text-xs">
+              <SelectValue placeholder="Select type" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="">No type</SelectItem>
               <SelectItem value="food">Food</SelectItem>
               <SelectItem value="liquor">Liquor</SelectItem>
               <SelectItem value="beverages">Beverages</SelectItem>
               <SelectItem value="revive">Revive</SelectItem>
             </SelectContent>
           </Select>
+
+          <Button
+            onClick={() => setIsEditing(true)}
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+          >
+            <Edit className="h-3 w-3" />
+          </Button>
+
+          <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-destructive hover:text-destructive"
+              >
+                <Trash className="h-3 w-3" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Category</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to delete the category "{category.name}"? This will also delete all items in this category.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => deleteCategory(category.id)}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          <Button
+            onClick={() => moveCategory(categoryIndex, "up")}
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            disabled={categoryIndex === 0}
+          >
+            <ArrowUp className="h-3 w-3" />
+          </Button>
+
+          <Button
+            onClick={() => moveCategory(categoryIndex, "down")}
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            disabled={categoryIndex === categoriesLength - 1}
+          >
+            <ArrowDown className="h-3 w-3" />
+          </Button>
           
           <Button
+            onClick={() => addMenuItem(category.id)}
             variant="ghost"
             size="icon"
-            onClick={() => moveCategory(categoryIndex, "up")}
-            disabled={categoryIndex === 0}
-            className="h-7 w-7"
+            className="h-7 w-7 text-blue-600 dark:text-blue-400"
           >
-            <MoveUp className="h-3 w-3 md:h-4 md:w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => moveCategory(categoryIndex, "down")}
-            disabled={categoryIndex === categoriesLength - 1}
-            className="h-7 w-7"
-          >
-            <MoveDown className="h-3 w-3 md:h-4 md:w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => deleteCategory(category.id)}
-            className="h-7 w-7 text-destructive hover:text-destructive"
-          >
-            <Trash2 className="h-3 w-3 md:h-4 md:w-4" />
+            <Plus className="h-3 w-3" />
           </Button>
         </div>
       </div>
 
-      {isExpanded && (
-        <>
-          <Separator className="my-2" />
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <h3 className="text-sm md:text-base font-medium">Menu Items</h3>
-              <Button
-                onClick={() => addMenuItem(category.id)}
-                size="sm"
-                variant="outline"
-                className="h-7 gap-1 text-xs md:text-sm"
-              >
-                <PlusCircle className="h-3 w-3 md:h-4 md:w-4" />
-                <span className="hidden md:inline">Add Item</span>
-                <span className="md:hidden">Add</span>
-              </Button>
-            </div>
-
-            {category.items.length === 0 ? (
-              <div className="text-center py-4 border rounded-lg border-dashed">
-                <p className="text-xs md:text-sm text-muted-foreground">
-                  No items in this category yet.
-                </p>
+      <Collapsible open={isExpanded}>
+        <CollapsibleContent>
+          {category.items.length === 0 ? (
+            <div className="p-3 pt-0 border-t">
+              <div className="text-center py-3 text-xs text-muted-foreground">
+                No items yet. Add your first item by clicking the + button.
               </div>
-            ) : (
-              <CategoryItemsList 
-                items={category.items} 
-                categoryId={category.id} 
-                categoryIndex={categoryIndex} 
-                moveMenuItem={moveMenuItem} 
-                deleteMenuItem={deleteMenuItem} 
-                setActiveItemId={setActiveItemId} 
-              />
-            )}
-          </div>
-        </>
-      )}
-    </div>
-  );
-};
-
-interface CategoryItemsListProps {
-  items: MenuItemUI[];
-  categoryId: string;
-  categoryIndex: number;
-  moveMenuItem: (categoryIndex: number, itemIndex: number, direction: "up" | "down") => void;
-  deleteMenuItem: (categoryId: string, itemId: string) => void;
-  setActiveItemId: (id: string | null) => void;
-}
-
-const CategoryItemsList: React.FC<CategoryItemsListProps> = ({
-  items,
-  categoryId,
-  categoryIndex,
-  moveMenuItem,
-  deleteMenuItem,
-  setActiveItemId,
-}) => {
-  return (
-    <div className="space-y-2">
-      {items.map((item, itemIndex) => (
-        <div
-          key={item.id}
-          className="border rounded-md p-2 transition-all duration-200 hover:shadow-sm"
-        >
-          <div className="flex justify-between items-center gap-2">
-            <div className="flex-1 min-w-0">
-              <p className="text-sm md:text-base font-medium truncate">
-                {item.name}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                ₹{parseFloat(item.price).toFixed(2)}
-              </p>
             </div>
-            <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setActiveItemId(item.id)}
-                className="h-7 w-7"
-              >
-                <Pencil className="h-3 w-3 md:h-4 md:w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => moveMenuItem(categoryIndex, itemIndex, "up")}
-                disabled={itemIndex === 0}
-                className="h-7 w-7"
-              >
-                <MoveUp className="h-3 w-3 md:h-4 md:w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => moveMenuItem(categoryIndex, itemIndex, "down")}
-                disabled={itemIndex === items.length - 1}
-                className="h-7 w-7"
-              >
-                <MoveDown className="h-3 w-3 md:h-4 md:w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => deleteMenuItem(categoryId, item.id)}
-                className="h-7 w-7 text-destructive hover:text-destructive"
-              >
-                <Trash2 className="h-3 w-3 md:h-4 md:w-4" />
-              </Button>
+          ) : (
+            <div className="p-3 pt-0 border-t">
+              <div className="space-y-2 pt-2">
+                {category.items.map((item, itemIndex) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center justify-between border rounded-md p-2 hover:bg-accent/50 transition-colors bg-background"
+                  >
+                    <div
+                      className="flex-1 cursor-pointer truncate"
+                      onClick={() => setActiveItemId(item.id)}
+                    >
+                      <div className={cn("text-sm font-medium line-clamp-1", !item.is_visible ? "text-muted-foreground line-through" : "")}>
+                        {item.name}
+                      </div>
+                      <div className="text-xs text-muted-foreground line-clamp-1">
+                        ₹{item.price} · {item.description?.substring(0, 30) || "No description"}
+                        {item.description && item.description.length > 30 ? "..." : ""}
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <Button
+                        onClick={() => moveMenuItem(categoryIndex, itemIndex, "up")}
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        disabled={itemIndex === 0}
+                      >
+                        <ArrowUp className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        onClick={() => moveMenuItem(categoryIndex, itemIndex, "down")}
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        disabled={itemIndex === category.items.length - 1}
+                      >
+                        <ArrowDown className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        onClick={() => setActiveItemId(item.id)}
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 text-blue-600 dark:text-blue-400"
+                      >
+                        <Edit className="h-3 w-3" />
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 text-destructive hover:text-destructive"
+                          >
+                            <Trash className="h-3 w-3" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Menu Item</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete "{item.name}"? This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => deleteMenuItem(category.id, item.id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-        </div>
-      ))}
-    </div>
+          )}
+        </CollapsibleContent>
+      </Collapsible>
+    </Card>
   );
 };
 
