@@ -1,9 +1,9 @@
 
 import React, { useState } from "react";
-import { ChevronDown, ChevronUp, Edit, Trash, ChevronRight, Plus, ArrowUp, ArrowDown, Check } from "lucide-react";
+import { ChevronDown, ChevronRight, Edit, Trash, Plus, ArrowUp, ArrowDown, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
 import { Card } from "@/components/ui/card";
 import { MenuCategoryUI, MenuItemUI } from "@/services/menuService";
 import { cn } from "@/lib/utils";
@@ -70,133 +70,135 @@ const CategoryItem: React.FC<CategoryItemProps> = ({
 
   return (
     <Card className="overflow-hidden">
-      <div className="flex items-center justify-between p-3">
-        <div className="flex-1 flex items-center">
-          <CollapsibleTrigger
-            onClick={() => toggleExpand(category.id)}
-            className="mr-2"
-          >
-            {isExpanded ? (
-              <ChevronDown className="h-4 w-4" />
-            ) : (
-              <ChevronRight className="h-4 w-4" />
-            )}
-          </CollapsibleTrigger>
+      <Collapsible open={isExpanded} onOpenChange={() => toggleExpand(category.id)}>
+        <div className="flex items-center justify-between p-3">
+          <div className="flex-1 flex items-center">
+            <Button
+              onClick={() => toggleExpand(category.id)}
+              variant="ghost"
+              size="icon"
+              className="mr-2 p-0 h-6 w-6"
+            >
+              {isExpanded ? (
+                <ChevronDown className="h-4 w-4" />
+              ) : (
+                <ChevronRight className="h-4 w-4" />
+              )}
+            </Button>
 
-          {isEditing ? (
-            <div className="flex-1 flex gap-2">
-              <Input
-                value={editedName}
-                onChange={handleNameChange}
-                onBlur={handleSaveName}
-                onKeyDown={handleKeyDown}
-                autoFocus
-                className="h-7 py-1"
-              />
-              <Button
-                onClick={handleSaveName}
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
-              >
-                <Check className="h-4 w-4" />
-              </Button>
-            </div>
-          ) : (
-            <div className="font-medium text-sm md:text-base line-clamp-1 mr-2">
-              {category.name}
-            </div>
-          )}
-        </div>
-
-        <div className="flex items-center gap-1">
-          {/* Category Type Selection */}
-          <Select
-            value={category.type || ""}
-            onValueChange={handleCategoryTypeChange}
-          >
-            <SelectTrigger className="h-7 w-[110px] text-xs">
-              <SelectValue placeholder="Select type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">No type</SelectItem>
-              <SelectItem value="food">Food</SelectItem>
-              <SelectItem value="liquor">Liquor</SelectItem>
-              <SelectItem value="beverages">Beverages</SelectItem>
-              <SelectItem value="revive">Revive</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Button
-            onClick={() => setIsEditing(true)}
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-          >
-            <Edit className="h-3 w-3" />
-          </Button>
-
-          <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-            <AlertDialogTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 text-destructive hover:text-destructive"
-              >
-                <Trash className="h-3 w-3" />
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete Category</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Are you sure you want to delete the category "{category.name}"? This will also delete all items in this category.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={() => deleteCategory(category.id)}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            {isEditing ? (
+              <div className="flex-1 flex gap-2">
+                <Input
+                  value={editedName}
+                  onChange={handleNameChange}
+                  onBlur={handleSaveName}
+                  onKeyDown={handleKeyDown}
+                  autoFocus
+                  className="h-7 py-1"
+                />
+                <Button
+                  onClick={handleSaveName}
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
                 >
-                  Delete
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+                  <Check className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <div className="font-medium text-sm md:text-base line-clamp-1 mr-2">
+                {category.name}
+              </div>
+            )}
+          </div>
 
-          <Button
-            onClick={() => moveCategory(categoryIndex, "up")}
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            disabled={categoryIndex === 0}
-          >
-            <ArrowUp className="h-3 w-3" />
-          </Button>
+          <div className="flex items-center gap-1">
+            {/* Category Type Selection */}
+            <Select
+              value={category.type || ""}
+              onValueChange={handleCategoryTypeChange}
+            >
+              <SelectTrigger className="h-7 w-[110px] text-xs">
+                <SelectValue placeholder="Select type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">No type</SelectItem>
+                <SelectItem value="food">Food</SelectItem>
+                <SelectItem value="liquor">Liquor</SelectItem>
+                <SelectItem value="beverages">Beverages</SelectItem>
+                <SelectItem value="revive">Revive</SelectItem>
+              </SelectContent>
+            </Select>
 
-          <Button
-            onClick={() => moveCategory(categoryIndex, "down")}
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            disabled={categoryIndex === categoriesLength - 1}
-          >
-            <ArrowDown className="h-3 w-3" />
-          </Button>
-          
-          <Button
-            onClick={() => addMenuItem(category.id)}
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 text-blue-600 dark:text-blue-400"
-          >
-            <Plus className="h-3 w-3" />
-          </Button>
+            <Button
+              onClick={() => setIsEditing(true)}
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+            >
+              <Edit className="h-3 w-3" />
+            </Button>
+
+            <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-destructive hover:text-destructive"
+                >
+                  <Trash className="h-3 w-3" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Category</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete the category "{category.name}"? This will also delete all items in this category.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => deleteCategory(category.id)}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
+            <Button
+              onClick={() => moveCategory(categoryIndex, "up")}
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              disabled={categoryIndex === 0}
+            >
+              <ArrowUp className="h-3 w-3" />
+            </Button>
+
+            <Button
+              onClick={() => moveCategory(categoryIndex, "down")}
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              disabled={categoryIndex === categoriesLength - 1}
+            >
+              <ArrowDown className="h-3 w-3" />
+            </Button>
+            
+            <Button
+              onClick={() => addMenuItem(category.id)}
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-blue-600 dark:text-blue-400"
+            >
+              <Plus className="h-3 w-3" />
+            </Button>
+          </div>
         </div>
-      </div>
 
-      <Collapsible open={isExpanded}>
         <CollapsibleContent>
           {category.items.length === 0 ? (
             <div className="p-3 pt-0 border-t">
