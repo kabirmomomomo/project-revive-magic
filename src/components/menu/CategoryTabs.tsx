@@ -9,9 +9,10 @@ import { useIsMobile } from "@/hooks/use-mobile";
 interface CategoryTabsProps {
   activeTab: CategoryType;
   onTabChange: (tab: CategoryType) => void;
+  ordersEnabled?: boolean;
 }
 
-const CategoryTabs: React.FC<CategoryTabsProps> = ({ activeTab, onTabChange }) => {
+const CategoryTabs: React.FC<CategoryTabsProps> = ({ activeTab, onTabChange, ordersEnabled = true }) => {
   const isMobile = useIsMobile();
 
   const tabs: Array<{ value: CategoryType; label: string; icon: React.ReactNode }> = [

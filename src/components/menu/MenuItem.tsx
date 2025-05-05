@@ -12,9 +12,10 @@ import { useIsMobile } from "@/hooks/use-mobile";
 interface MenuItemProps {
   item: MenuItemType;
   index: number;
+  ordersEnabled?: boolean;
 }
 
-const MenuItem: React.FC<MenuItemProps> = ({ item, index }) => {
+const MenuItem: React.FC<MenuItemProps> = ({ item, index, ordersEnabled = true }) => {
   if (item.is_visible === false) {
     return null;
   }
@@ -37,7 +38,7 @@ const MenuItem: React.FC<MenuItemProps> = ({ item, index }) => {
   const itemQuantity = cartItem ? cartItem.quantity : 0;
 
   const incrementQuantity = () => {
-    if (!item.is_available) return;
+    if (!item.is_available || !ordersEnabled) return;
 
     if (itemQuantity === 0) {
       addToCart(item, selectedVariant);
@@ -48,7 +49,7 @@ const MenuItem: React.FC<MenuItemProps> = ({ item, index }) => {
   };
 
   const decrementQuantity = () => {
-    if (!item.is_available) return;
+    if (!item.is_available || !ordersEnabled) return;
 
     if (itemQuantity > 0) {
       const variantId = selectedVariant?.id;
@@ -233,7 +234,7 @@ const MenuItem: React.FC<MenuItemProps> = ({ item, index }) => {
             isMobile ? "justify-center gap-2" : ""
           )}>
             {item.is_available ? (
-              itemQuantity > 0 ? (
+              itemQuantity > 0 && ordersEnabled ? (
                 <div className={cn(
                   "flex items-center gap-1 bg-purple-50 rounded-full shadow-sm",
                   isMobile ? "p-[2px]" : "p-0.5"
@@ -271,8 +272,10 @@ const MenuItem: React.FC<MenuItemProps> = ({ item, index }) => {
                 <Button
                   onClick={incrementQuantity}
                   size="sm"
+                  disabled={!ordersEnabled}
                   className={cn(
                     "bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white rounded-full flex items-center gap-1 shadow-sm hover:scale-105 transition-transform",
+                    !ordersEnabled && "opacity-50 pointer-events-none blur-[1px]",
                     isMobile ? "text-xs px-2 h-6 py-1 min-w-0" : "text-sm px-4 py-1"
                   )}
                 >

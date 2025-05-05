@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
@@ -52,6 +53,7 @@ const sampleData: Restaurant = {
       ],
     },
   ],
+  ordersEnabled: true,
 };
 
 const MenuPreview = () => {
@@ -60,7 +62,7 @@ const MenuPreview = () => {
   const tableId = searchParams.get('table');
   const [attemptedDatabaseSetup, setAttemptedDatabaseSetup] = useState(false);
   const [isDbError, setIsDbError] = useState(false);
-  const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({}); // Updated state type
+  const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({});
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<CategoryType>("food");
   const isMobile = useIsMobile();
@@ -125,6 +127,11 @@ const MenuPreview = () => {
   const restaurantToDisplay = useMemo(() => 
     restaurant || (menuId === "sample-restaurant" ? sampleData : null),
   [restaurant, menuId]);
+
+  // Check if orders are enabled for the restaurant
+  const isOrderingEnabled = useMemo(() => 
+    restaurantToDisplay?.ordersEnabled !== false,
+  [restaurantToDisplay]);
 
   // Initialize first category as open - optimized to run only when needed
   useEffect(() => {
@@ -246,7 +253,11 @@ const MenuPreview = () => {
           />
           
           <div className="mb-4">
-            <CategoryTabs activeTab={activeTab} onTabChange={handleTabChange} />
+            <CategoryTabs 
+              activeTab={activeTab} 
+              onTabChange={handleTabChange} 
+              ordersEnabled={isOrderingEnabled}
+            />
           </div>
 
           <div className={isMobile ? "px-2" : "px-6"}>
@@ -258,11 +269,20 @@ const MenuPreview = () => {
               toggleCategory={toggleCategory}
               searchQuery={searchQuery}
               activeTab={activeTab}
+              ordersEnabled={isOrderingEnabled}
             />
+            
+            {!isOrderingEnabled && (
+              <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg shadow-sm mt-4 mb-2 text-center">
+                <p className="text-yellow-700 text-sm">
+                  Online ordering is currently disabled by the restaurant. You can still browse the menu.
+                </p>
+              </div>
+            )}
           </div>
           
           <MenuFooter />
-          {tableId && (
+          {tableId && isOrderingEnabled && (
             <WaiterCallButton 
               tableId={tableId} 
               restaurantId={restaurantToDisplay.id} 
@@ -275,8 +295,8 @@ const MenuPreview = () => {
             toggleCategory={toggleCategory}
           />
         </div>
-        <Cart tableId={tableId || undefined} />
-        <OrderHistory tableId={tableId || undefined} />
+        {isOrderingEnabled && <Cart tableId={tableId || undefined} />}
+        {isOrderingEnabled && <OrderHistory tableId={tableId || undefined} />}
         <Toaster />
       </OrderProvider>
     </CartProvider>

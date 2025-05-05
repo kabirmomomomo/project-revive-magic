@@ -55,4 +55,5 @@
     wifi_password?: string;
     opening_time?: string;
     closing_time?: string;
+    ordersEnabled?: boolean;
   }

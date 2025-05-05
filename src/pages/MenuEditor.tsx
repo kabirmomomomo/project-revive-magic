@@ -32,6 +32,8 @@ import {
 } from "@/components/ui/sheet";
 import debounce from "lodash/debounce";
 import { saveState, loadState, hasUnsavedChanges, markChangesAsSaved } from '@/lib/statePersistence';
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 // Lazy load components
 const RestaurantForm = lazy(() => import('@/components/menu/editor/RestaurantForm'));
@@ -48,12 +50,14 @@ const MenuEditor = () => {
     name: "My Restaurant",
     description: "Welcome to our restaurant",
     categories: [],
+    ordersEnabled: true, // Default to enabled
   });
   const [isLoading, setIsLoading] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
 
+  // Query to fetch restaurant data
   const { data: restaurantData, isLoading: isLoadingRestaurant } = useQuery({
     queryKey: ['restaurant', user?.id],
     queryFn: async () => {
@@ -65,6 +69,7 @@ const MenuEditor = () => {
     enabled: !!user,
   });
 
+  // Mutation to save restaurant data
   const saveMenuMutation = useMutation({
     mutationFn: saveRestaurantMenu,
     onSuccess: () => {
@@ -80,11 +85,28 @@ const MenuEditor = () => {
 
   // Add debounced save function
   const debouncedSave = useCallback(
-    debounce((data: typeof restaurant) => {
+    debounce((data: RestaurantUI) => {
       saveMenuMutation.mutate(data);
     }, 1000),
     []
   );
+
+  // Handle orders toggle change
+  const handleOrdersToggle = (enabled: boolean) => {
+    setRestaurant(prev => {
+      const newState = {
+        ...prev,
+        ordersEnabled: enabled
+      };
+      
+      // Save changes immediately
+      saveMenuMutation.mutate(newState);
+      
+      return newState;
+    });
+    
+    toast.success(enabled ? "Orders enabled" : "Orders disabled");
+  };
 
   // Add state recovery
   useEffect(() => {
@@ -116,6 +138,7 @@ const MenuEditor = () => {
           name: "My Restaurant",
           description: "Welcome to our restaurant",
           categories: [],
+          ordersEnabled: true, // Default to enabled
         };
         setRestaurant(newRestaurant);
       }
@@ -756,6 +779,28 @@ const MenuEditor = () => {
           <Suspense fallback={<LoadingAnimation />}>
             <RestaurantForm restaurant={restaurant} setRestaurant={setRestaurant} />
           </Suspense>
+
+          {/* Add Orders Toggle Switch */}
+          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <h3 className="text-lg font-medium">Orders Settings</h3>
+                <p className="text-sm text-gray-500">
+                  Toggle ordering functionality in your menu preview
+                </p>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Label htmlFor="orders-enabled" className="text-sm font-medium">
+                  {restaurant.ordersEnabled ? "Enabled" : "Disabled"}
+                </Label>
+                <Switch
+                  id="orders-enabled"
+                  checked={restaurant.ordersEnabled}
+                  onCheckedChange={handleOrdersToggle}
+                />
+              </div>
+            </div>
+          </div>
 
           <Separator className="my-4" />
 
