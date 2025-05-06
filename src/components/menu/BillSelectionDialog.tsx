@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -31,23 +31,57 @@ const BillSelectionDialog: React.FC<BillSelectionDialogProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  const generateUniqueSessionCode = () => {
-    // Get current timestamp in milliseconds
-    const timestamp = Date.now().toString(36);
-    // Generate random string
-    const randomStr = Math.random().toString(36).substring(2, 5).toUpperCase();
-    // Combine timestamp and random string
-    const uniqueCode = `${randomStr}${timestamp.slice(-3)}`;
-    return uniqueCode;
+  // Clear any existing session when dialog opens
+  useEffect(() => {
+    if (open) {
+      localStorage.removeItem("billSessionId");
+      localStorage.removeItem("billSessionCode");
+      localStorage.removeItem("billSessionOwner");
+      localStorage.removeItem("billSessionExpiresAt");
+    }
+  }, [open]);
+
+  const generateUniqueSessionCode = async () => {
+    // Generate a random 6-character code
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let code;
+    let isUnique = false;
+    
+    while (!isUnique) {
+      code = '';
+      for (let i = 0; i < 6; i++) {
+        code += characters.charAt(Math.floor(Math.random() * characters.length));
+      }
+      
+      // Check if code already exists and is not expired
+      const { data, error } = await supabase
+        .from("bill_sessions")
+        .select("code")
+        .eq("code", code)
+        .gt("expires_at", new Date().toISOString())
+        .single();
+        
+      if (!data) {
+        isUnique = true;
+      }
+    }
+    
+    return code;
   };
 
   const handleCreateNewBill = async () => {
     setIsLoading(true);
     try {
+      // Clear any existing session data when starting new bill
+      localStorage.removeItem("billSessionId");
+      localStorage.removeItem("billSessionCode");
+      localStorage.removeItem("billSessionOwner");
+      localStorage.removeItem("billSessionExpiresAt");
+
       // Generate a unique session code
-      const code = generateUniqueSessionCode();
+      const code = await generateUniqueSessionCode();
       
-      // Create a new bill session
+      // Create a new bill session with expiration
       const { data, error } = await supabase
         .from("bill_sessions")
         .insert({
@@ -55,7 +89,8 @@ const BillSelectionDialog: React.FC<BillSelectionDialogProps> = ({
           table_id: tableId,
           code: code,
           is_active: true,
-          created_at: new Date().toISOString()
+          created_at: new Date().toISOString(),
+          expires_at: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString() // 6 hours from now
         })
         .select()
         .single();
@@ -66,10 +101,11 @@ const BillSelectionDialog: React.FC<BillSelectionDialogProps> = ({
       localStorage.setItem("billSessionId", data.id);
       localStorage.setItem("billSessionCode", data.code);
       localStorage.setItem("billSessionOwner", "true");
+      localStorage.setItem("billSessionExpiresAt", data.expires_at);
 
-      // Close dialog and refresh page to update state
+      // Close dialog and navigate to the menu with the new session code
       onOpenChange(false);
-      window.location.reload();
+      navigate(`/menu-preview/${restaurantId}?table=${tableId}&sessionCode=${data.code}`);
     } catch (error) {
       console.error("Error creating bill session:", error);
       toast.error("Failed to create new bill. Please try again.");
@@ -86,18 +122,19 @@ const BillSelectionDialog: React.FC<BillSelectionDialogProps> = ({
 
     setIsLoading(true);
     try {
-      // Look up the session code
+      // Look up the session code and check if it's not expired
       const { data, error } = await supabase
         .from("bill_sessions")
         .select("*")
         .eq("code", sessionCode.toUpperCase())
         .eq("is_active", true)
+        .gt("expires_at", new Date().toISOString())
         .single();
 
       if (error) throw error;
 
       if (!data) {
-        toast.error("Invalid session code");
+        toast.error("Invalid or expired session code");
         return;
       }
 
@@ -105,10 +142,11 @@ const BillSelectionDialog: React.FC<BillSelectionDialogProps> = ({
       localStorage.setItem("billSessionId", data.id);
       localStorage.setItem("billSessionCode", data.code);
       localStorage.setItem("billSessionOwner", "false");
+      localStorage.setItem("billSessionExpiresAt", data.expires_at);
 
-      // Close dialog and refresh page to update state
+      // Close dialog and navigate to the menu with the session code
       onOpenChange(false);
-      window.location.reload();
+      navigate(`/menu-preview/${restaurantId}?table=${tableId}&sessionCode=${data.code}`);
     } catch (error) {
       console.error("Error joining bill session:", error);
       toast.error("Failed to join bill. Please try again.");

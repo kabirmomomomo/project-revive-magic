@@ -4,6 +4,7 @@ import { toast } from '@/components/ui/sonner';
 import { useCart } from './CartContext';
 import { getDeviceId } from '@/utils/deviceId';
 import { useSearchParams } from 'react-router-dom';
+import { isSessionExpired, clearExpiredSession, cleanupExpiredSessions } from '@/utils/sessionCleanup';
 
 interface OrderItem {
   id: string;
@@ -55,6 +56,17 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const sessionCode = localStorage.getItem("billSessionCode");
 
   useEffect(() => {
+    // Clean up expired sessions periodically
+    const cleanupInterval = setInterval(() => {
+      cleanupExpiredSessions();
+    }, 5 * 60 * 1000); // Run every 5 minutes
+
+    return () => {
+      clearInterval(cleanupInterval);
+    };
+  }, []);
+
+  useEffect(() => {
     if (restaurantIdFromUrl) {
       console.log('Restaurant ID detected:', restaurantIdFromUrl);
       fetchOrders(restaurantIdFromUrl);
@@ -67,6 +79,13 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
     
     if (sessionId && restaurantIdFromUrl) {
+      // Check if session is expired
+      if (isSessionExpired()) {
+        clearExpiredSession();
+        toast.error("Your session has expired. Please start a new bill.");
+        return;
+      }
+
       console.log('Session ID detected:', sessionId);
       fetchSessionOrders(restaurantIdFromUrl, sessionId);
       subscribeToSessionOrders(restaurantIdFromUrl, sessionId);

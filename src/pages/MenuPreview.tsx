@@ -230,6 +230,7 @@ const MenuPreview = () => {
           .select("*")
           .eq("code", urlSessionCode)
           .eq("is_active", true)
+          .gt("expires_at", new Date().toISOString())
           .single()
           .then(({ data, error }) => {
             if (data && !error) {
@@ -237,44 +238,18 @@ const MenuPreview = () => {
               localStorage.setItem("billSessionId", data.id);
               localStorage.setItem("billSessionCode", data.code);
               localStorage.setItem("billSessionOwner", "false");
+              localStorage.setItem("billSessionExpiresAt", data.expires_at);
               
               setSessionCode(data.code);
               setIsSessionOwner(false);
+            } else {
+              // If session is invalid or expired, show the dialog
+              setShowBillDialog(true);
             }
           });
       } else {
-        // Check localStorage for existing session
-        const storedSessionId = localStorage.getItem("billSessionId");
-        const storedSessionCode = localStorage.getItem("billSessionCode");
-        const storedIsOwner = localStorage.getItem("billSessionOwner") === "true";
-        
-        if (storedSessionId && storedSessionCode) {
-          // Verify the session is still active
-          supabase
-            .from("bill_sessions")
-            .select("*")
-            .eq("id", storedSessionId)
-            .eq("is_active", true)
-            .single()
-            .then(({ data, error }) => {
-              if (data && !error) {
-                // Session is still active
-                setSessionCode(storedSessionCode);
-                setIsSessionOwner(storedIsOwner);
-              } else {
-                // Session is no longer active, clear and show dialog
-                localStorage.removeItem("billSessionId");
-                localStorage.removeItem("billSessionCode");
-                localStorage.removeItem("billSessionOwner");
-                
-                // Show the dialog to create/join a session
-                setShowBillDialog(true);
-              }
-            });
-        } else {
-          // No existing session, show dialog to create/join
-          setShowBillDialog(true);
-        }
+        // Always show the dialog if no session code in URL
+        setShowBillDialog(true);
       }
     }
   }, [tableId, restaurantToDisplay, searchParams]);

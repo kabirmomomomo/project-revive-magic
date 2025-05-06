@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { MenuItem as MenuItemType, MenuItemVariant } from "@/types/menu";
 import { useCart } from "@/contexts/CartContext";
@@ -14,7 +14,7 @@ interface MenuItemProps {
   ordersEnabled?: boolean;
 }
 
-const MenuItem: React.FC<MenuItemProps> = ({ item, index, ordersEnabled = true }) => {
+const MenuItem: React.FC<MenuItemProps> = React.memo(({ item, index, ordersEnabled = true }) => {
   if (item.is_visible === false) {
     return null;
   }
@@ -35,6 +35,16 @@ const MenuItem: React.FC<MenuItemProps> = ({ item, index, ordersEnabled = true }
   });
 
   const itemQuantity = cartItem ? cartItem.quantity : 0;
+
+  // Memoize the dietary icon to prevent unnecessary re-renders
+  const dietaryIcon = useMemo(() => {
+    if (item.dietary_type === 'veg') {
+      return <LeafyGreen size={isMobile ? 14 : 16} className="text-green-600 flex-shrink-0" />;
+    } else if (item.dietary_type === 'non-veg') {
+      return <Beef size={isMobile ? 14 : 16} className="text-red-600 flex-shrink-0" />;
+    }
+    return null;
+  }, [item.dietary_type, isMobile]);
 
   const incrementQuantity = () => {
     if (!item.is_available || !ordersEnabled) return;
@@ -62,16 +72,6 @@ const MenuItem: React.FC<MenuItemProps> = ({ item, index, ordersEnabled = true }
   };
 
   const hasOptions = !!(item.variants?.length > 0 || item.addons?.length > 0);
-
-  const renderDietaryIcon = () => {
-    console.log(`Rendering dietary icon for item ${item.id}: ${JSON.stringify(item.dietary_type)}`);
-    if (item.dietary_type === 'veg') {
-      return <LeafyGreen size={isMobile ? 14 : 16} className="text-green-600 flex-shrink-0" />;
-    } else if (item.dietary_type === 'non-veg') {
-      return <Beef size={isMobile ? 14 : 16} className="text-red-600 flex-shrink-0" />;
-    }
-    return null;
-  };
 
   return (
     <div
@@ -113,7 +113,7 @@ const MenuItem: React.FC<MenuItemProps> = ({ item, index, ordersEnabled = true }
             isMobile ? "flex-col items-center gap-0 mb-1" : ""
           )}>
             <div className="flex items-center gap-1">
-              {renderDietaryIcon()}
+              {dietaryIcon}
               <h3 className={cn(
                 "font-semibold text-purple-900 truncate leading-tight",
                 isMobile ? "text-xs w-full mb-0 px-1" : "text-lg"
@@ -301,6 +301,8 @@ const MenuItem: React.FC<MenuItemProps> = ({ item, index, ordersEnabled = true }
       </div>
     </div>
   );
-};
+});
+
+MenuItem.displayName = 'MenuItem';
 
 export default MenuItem;
