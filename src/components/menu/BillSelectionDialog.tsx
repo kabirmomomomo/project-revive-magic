@@ -1,252 +1,150 @@
-
 import React, { useState } from "react";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogHeader, 
-  DialogTitle 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { UserPlus, Receipt, AlertCircle } from "lucide-react";
-import { useSearchParams, useNavigate } from "react-router-dom";
-import { toast } from "@/components/ui/sonner";
+import { Label } from "@/components/ui/label";
+import { Users, PlusCircle } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { v4 as uuidv4 } from "uuid";
+import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 interface BillSelectionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   restaurantId: string;
-  tableId?: string;
+  tableId: string;
 }
 
 const BillSelectionDialog: React.FC<BillSelectionDialogProps> = ({
   open,
   onOpenChange,
   restaurantId,
-  tableId
+  tableId,
 }) => {
-  const [joinCode, setJoinCode] = useState("");
-  const [isJoining, setIsJoining] = useState(false);
+  const [sessionCode, setSessionCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  // Generate a unique session code for this bill
-  const generateSessionCode = () => {
-    // Take first 6 characters of UUID for simplicity
-    return uuidv4().substring(0, 6).toUpperCase();
+  const generateUniqueSessionCode = () => {
+    // Get current timestamp in milliseconds
+    const timestamp = Date.now().toString(36);
+    // Generate random string
+    const randomStr = Math.random().toString(36).substring(2, 5).toUpperCase();
+    // Combine timestamp and random string
+    const uniqueCode = `${randomStr}${timestamp.slice(-3)}`;
+    return uniqueCode;
   };
 
-  const handleStartNewBill = async () => {
+  const handleCreateNewBill = async () => {
     setIsLoading(true);
-    setError(null);
-
     try {
-      // Generate a session code for others to join
-      const sessionCode = generateSessionCode();
-      const sessionId = uuidv4();
+      // Generate a unique session code
+      const code = generateUniqueSessionCode();
       
-      console.log("Starting new bill with sessionId:", sessionId, "and code:", sessionCode);
-      
-      // Generate a new table ID with letter suffix
-      let newTableId = tableId;
-      if (tableId) {
-        // Find existing tables with this base name
-        const { data: existingOrders } = await supabase
-          .from('orders')
-          .select('table_id')
-          .eq('restaurant_id', restaurantId)
-          .like('table_id', `${tableId}%`)
-          .order('created_at', { ascending: false });
-          
-        const baseTables = existingOrders?.filter(order => order.table_id === tableId) || [];
-        
-        // If there are already orders for this base table, create a new table with suffix
-        if (baseTables.length > 0) {
-          // Find existing split tables
-          const splitTables = existingOrders?.filter(order => 
-            order.table_id && 
-            order.table_id.startsWith(tableId) && 
-            order.table_id !== tableId
-          ) || [];
-          
-          // Find highest suffix
-          if (splitTables.length > 0) {
-            const suffixes = splitTables
-              .map(order => {
-                const suffix = order.table_id?.replace(tableId, '');
-                return suffix ? suffix.charCodeAt(0) : 0;
-              })
-              .filter(code => code > 0);
-              
-            if (suffixes.length > 0) {
-              const highestCode = Math.max(...suffixes);
-              // Use the next letter in the alphabet
-              newTableId = `${tableId}${String.fromCharCode(highestCode + 1)}`;
-            } else {
-              newTableId = `${tableId}A`;
-            }
-          } else {
-            newTableId = `${tableId}A`;
-          }
-        }
-      }
-      
-      // Store this session in localStorage
-      localStorage.setItem("billSessionId", sessionId);
-      localStorage.setItem("billSessionCode", sessionCode);
-      localStorage.setItem("billSessionOwner", "true");
-      
-      // Store the session in Supabase
-      const { error: insertError } = await supabase
+      // Create a new bill session
+      const { data, error } = await supabase
         .from("bill_sessions")
-        .insert([{
-          id: sessionId,
-          code: sessionCode,
+        .insert({
           restaurant_id: restaurantId,
-          table_id: newTableId,
+          table_id: tableId,
+          code: code,
           is_active: true,
           created_at: new Date().toISOString()
-        }]);
-        
-      if (insertError) {
-        console.error("Error inserting bill session:", insertError);
-        throw new Error(`Failed to create bill session: ${insertError.message}`);
-      }
-      
-      // Close dialog and continue
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Store session info in localStorage
+      localStorage.setItem("billSessionId", data.id);
+      localStorage.setItem("billSessionCode", data.code);
+      localStorage.setItem("billSessionOwner", "true");
+
+      // Close dialog and refresh page to update state
       onOpenChange(false);
-      
-      // Show the session code to the user
-      toast.success(`Your bill code is ${sessionCode}. Share it with friends to join this bill.`);
-    } catch (err) {
-      console.error("Error starting new bill:", err);
-      setError("Failed to start a new bill. Please try again.");
+      window.location.reload();
+    } catch (error) {
+      console.error("Error creating bill session:", error);
+      toast.error("Failed to create new bill. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleJoinBill = async () => {
-    if (!joinCode.trim()) {
-      setError("Please enter a join code");
+    if (!sessionCode.trim()) {
+      toast.error("Please enter a session code");
       return;
     }
 
     setIsLoading(true);
-    setError(null);
-
     try {
-      // Look up the session in Supabase
+      // Look up the session code
       const { data, error } = await supabase
         .from("bill_sessions")
         .select("*")
-        .eq("code", joinCode.trim().toUpperCase())
+        .eq("code", sessionCode.toUpperCase())
         .eq("is_active", true)
         .single();
-        
-      if (error || !data) {
-        throw new Error("Invalid join code or session expired");
+
+      if (error) throw error;
+
+      if (!data) {
+        toast.error("Invalid session code");
+        return;
       }
-      
-      // Store this session in localStorage (but not as owner)
+
+      // Store session info in localStorage
       localStorage.setItem("billSessionId", data.id);
       localStorage.setItem("billSessionCode", data.code);
       localStorage.setItem("billSessionOwner", "false");
-      
-      // Close dialog and continue
+
+      // Close dialog and refresh page to update state
       onOpenChange(false);
-      
-      toast.success(`You've joined bill ${data.code}. Your orders will be added to this bill.`);
-      
-      // If table ID is different, we need to update the URL
-      if (data.table_id && data.table_id !== tableId) {
-        const currentParams = Object.fromEntries(searchParams.entries());
-        navigate(`/menu-preview/${restaurantId}?${new URLSearchParams({
-          ...currentParams,
-          table: data.table_id,
-          sessionCode: data.code
-        }).toString()}`);
-      }
-    } catch (err) {
-      console.error("Error joining bill:", err);
-      setError("Invalid join code or session expired");
+      window.location.reload();
+    } catch (error) {
+      console.error("Error joining bill session:", error);
+      toast.error("Failed to join bill. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+    <Dialog open={open} onOpenChange={() => {}}>
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle className="text-xl text-center">How would you like to proceed?</DialogTitle>
-          <DialogDescription className="text-center">
-            Start a new bill or join a friend's existing bill
+          <DialogTitle className="text-xl font-bold text-center">
+            Welcome to Table {tableId}
+          </DialogTitle>
+          <DialogDescription className="text-center text-base">
+            Please select how you would like to proceed
           </DialogDescription>
         </DialogHeader>
 
-        {isJoining ? (
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium">Join Existing Bill</h3>
-              <p className="text-sm text-muted-foreground">
-                Enter the code shared by your friend to join their bill
-              </p>
-            </div>
-            <div className="space-y-2">
-              <Input
-                placeholder="Enter 6-digit code"
-                value={joinCode}
-                onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-                className="text-center text-lg tracking-wider font-mono"
-                maxLength={6}
-              />
-              {error && (
-                <div className="flex items-center text-sm text-red-500 gap-1">
-                  <AlertCircle className="h-4 w-4" />
-                  <span>{error}</span>
-                </div>
-              )}
-            </div>
-            <div className="flex space-x-2">
-              <Button 
-                variant="outline" 
-                className="w-1/2" 
-                onClick={() => setIsJoining(false)}
-                disabled={isLoading}
-              >
-                Back
-              </Button>
-              <Button 
-                className="w-1/2" 
-                onClick={handleJoinBill}
-                disabled={isLoading || !joinCode.trim()}
-              >
-                {isLoading ? "Joining..." : "Join Bill"}
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <div className="flex flex-col space-y-4 py-4">
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
             <Button
-              size="lg"
-              className="w-full py-8 flex flex-col items-center justify-center gap-2"
-              onClick={handleStartNewBill}
+              variant="outline"
+              className="h-24 flex flex-col items-center justify-center gap-2 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200"
+              onClick={handleCreateNewBill}
               disabled={isLoading}
             >
-              <Receipt className="h-6 w-6 mb-1" />
+              <PlusCircle className="h-8 w-8" />
               <span className="text-lg font-medium">Start New Bill</span>
-              <span className="text-xs font-normal opacity-80">
-                Create a new bill for this table
+              <span className="text-sm text-muted-foreground">
+                Create a new bill and invite friends
               </span>
             </Button>
-            
-            <div className="relative py-2">
+
+            <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t" />
               </div>
@@ -256,29 +154,31 @@ const BillSelectionDialog: React.FC<BillSelectionDialogProps> = ({
                 </span>
               </div>
             </div>
-            
-            <Button
-              variant="outline"
-              size="lg"
-              className="w-full py-8 flex flex-col items-center justify-center gap-2"
-              onClick={() => setIsJoining(true)}
-              disabled={isLoading}
-            >
-              <UserPlus className="h-6 w-6 mb-1" />
-              <span className="text-lg font-medium">Join Friend's Bill</span>
-              <span className="text-xs font-normal opacity-80">
-                Enter a code to join an existing bill
-              </span>
-            </Button>
-            
-            {error && (
-              <div className="flex items-center text-sm text-red-500 gap-1">
-                <AlertCircle className="h-4 w-4" />
-                <span>{error}</span>
+
+            <div className="space-y-2">
+              <Label htmlFor="session-code">Join Friend's Bill</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="session-code"
+                  placeholder="Enter 6-digit code"
+                  value={sessionCode}
+                  onChange={(e) => setSessionCode(e.target.value.toUpperCase())}
+                  maxLength={6}
+                  className="text-center tracking-widest font-mono"
+                  disabled={isLoading}
+                />
+                <Button
+                  onClick={handleJoinBill}
+                  disabled={isLoading}
+                  className="whitespace-nowrap"
+                >
+                  <Users className="h-4 w-4 mr-2" />
+                  Join
+                </Button>
               </div>
-            )}
+            </div>
           </div>
-        )}
+        </div>
       </DialogContent>
     </Dialog>
   );

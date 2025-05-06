@@ -370,9 +370,9 @@ const MenuPreview = () => {
             toggleCategory={toggleCategory}
           />
           
-          {/* Show the session code if this user is the owner of a bill session */}
-          {sessionCode && isSessionOwner && (
-            <SessionCodeDisplay sessionCode={sessionCode} />
+          {/* Show the session code if we have one */}
+          {sessionCode && (
+            <SessionCodeDisplay />
           )}
         </div>
         

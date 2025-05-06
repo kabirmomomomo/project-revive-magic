@@ -34,6 +34,9 @@ interface OrderContextType {
   isLoading: boolean;
   tableOrders: Order[];
   sessionOrders: Order[];
+  fetchOrders: (restaurantId: string) => Promise<void>;
+  fetchTableOrders: (restaurantId: string, tableId: string) => Promise<void>;
+  fetchSessionOrders: (restaurantId: string, sessionId: string) => Promise<void>;
 }
 
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
@@ -102,44 +105,49 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     try {
       console.log('Fetching orders for restaurant:', restaurantId, 'table:', tableId);
       
-      // First try to get exact match orders
-      const { data: exactMatches, error: exactError } = await supabase
+      // Get all orders for this table, including those with different session codes
+      const { data: allOrders, error } = await supabase
         .from('orders')
         .select(`
           *,
           items:order_items(*)
         `)
         .eq('restaurant_id', restaurantId)
-        .eq('table_id', tableId)
+        .or(`table_id.eq.${tableId},table_id.like.${tableId}%`)
         .order('created_at', { ascending: false });
         
-      if (exactError) {
-        console.error('Error fetching exact match table orders:', exactError);
-        throw exactError;
+      if (error) {
+        console.error('Error fetching table orders:', error);
+        throw error;
       }
+
+      // Group orders by session code
+      const ordersBySession = (allOrders || []).reduce((acc: Record<string, Order[]>, order: Order) => {
+        const key = order.session_code || 'no_session';
+        if (!acc[key]) {
+          acc[key] = [];
+        }
+        acc[key].push(order);
+        return acc;
+      }, {});
+
+      // For each session group, create a unique table ID
+      const processedOrders = Object.entries(ordersBySession).flatMap(([sessionCode, orders]: [string, Order[]]) => {
+        if (sessionCode === 'no_session') {
+          // For orders without session code, keep original table ID
+          return orders;
+        }
+
+        // For orders with session code, add a suffix based on the session code
+        const suffix = sessionCode.substring(0, 1).toUpperCase();
+        return orders.map(order => ({
+          ...order,
+          table_id: `${tableId}${suffix}`
+        }));
+      });
       
-      // Then get orders with table ID as prefix (like Table1A, Table1B)
-      const { data: prefixMatches, error: prefixError } = await supabase
-        .from('orders')
-        .select(`
-          *,
-          items:order_items(*)
-        `)
-        .eq('restaurant_id', restaurantId)
-        .like('table_id', `${tableId}%`)
-        .not('table_id', 'eq', tableId)
-        .order('created_at', { ascending: false });
-        
-      if (prefixError) {
-        console.error('Error fetching prefix match table orders:', prefixError);
-        throw prefixError;
-      }
-      
-      // Combine results with exact matches first
-      const allTableOrders = [...(exactMatches || []), ...(prefixMatches || [])];
-      
-      console.log('Table orders fetched:', allTableOrders.length || 0);
-      setTableOrders(allTableOrders || []);
+      console.log('Table orders fetched:', processedOrders.length || 0);
+      setTableOrders(processedOrders || []);
     } catch (error) {
       console.error('Error in fetchTableOrders:', error);
       toast.error('Failed to load table orders');
@@ -149,6 +157,11 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const fetchSessionOrders = async (restaurantId: string, sessionId: string) => {
     try {
       console.log('Fetching orders for restaurant:', restaurantId, 'session:', sessionId);
+      
+      // Get the current session code
+      const currentSessionCode = localStorage.getItem("billSessionCode");
+      
+      // Fetch orders for the current session
       const { data, error } = await supabase
         .from('orders')
         .select(`
@@ -157,6 +170,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         `)
         .eq('restaurant_id', restaurantId)
         .eq('session_id', sessionId)
+        .eq('session_code', currentSessionCode)  // Only get orders with the current session code
         .order('created_at', { ascending: false });
         
       if (error) {
@@ -243,68 +257,10 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       
       let finalTableId = tableId || '';
       
-      if (isSplitBill && tableId) {
-        // This is a new bill started by this user, so give it a unique letter suffix
-        // First, check if there are existing bills for this table
-        const { data: existingOrders } = await supabase
-          .from('orders')
-          .select('table_id')
-          .eq('restaurant_id', restaurantId)
-          .eq('table_id', tableId)
-          .is('session_id', null)  // Look for orders without a session (original table)
-          .limit(1);
-          
-        // If this is the first bill for this table, add 'A' suffix
-        if (!existingOrders || existingOrders.length === 0) {
-          finalTableId = `${tableId}A`;
-        } else {
-          // Find the highest letter suffix used so far
-          const { data: existingSplitBills } = await supabase
-            .from('orders')
-            .select('table_id')
-            .eq('restaurant_id', restaurantId)
-            .like('table_id', `${tableId}%`)
-            .not('table_id', 'eq', tableId);
-            
-          if (existingSplitBills && existingSplitBills.length > 0) {
-            // Extract suffixes and find the next letter
-            const suffixes = existingSplitBills
-              .map(order => {
-                const suffix = order.table_id?.replace(tableId || '', '');
-                return suffix ? suffix.charCodeAt(0) : 0;
-              })
-              .filter(code => code > 0);
-              
-            if (suffixes.length > 0) {
-              const highestCode = Math.max(...suffixes);
-              // Use the next letter in the alphabet
-              finalTableId = `${tableId}${String.fromCharCode(highestCode + 1)}`;
-            } else {
-              finalTableId = `${tableId}A`;
-            }
-          } else {
-            finalTableId = `${tableId}A`;
-          }
-        }
-        
-        // Store the table ID with the session so future orders use the same table ID
-        await supabase
-          .from('bill_sessions')
-          .update({ table_id: finalTableId })
-          .eq('id', sessionId);
-      } else if (sessionId && !isSessionOwner) {
-        // For joined bills, find the table ID that the session is already using
-        const { data: sessionData } = await supabase
-          .from('bill_sessions')
-          .select('table_id')
-          .eq('id', sessionId)
-          .single();
-          
-        if (sessionData && sessionData.table_id) {
-          // Use the existing table ID associated with this session
-          finalTableId = sessionData.table_id;
-        } else if (sessionCode) {
-          // If session exists but doesn't have a table ID yet, check if any orders with this session code have a table ID
+      if (sessionId) {
+        // For any session (new or joined), check if there's an existing table for this session
+        if (sessionCode) {
+          // First check if there are any existing orders with this session code
           const { data: existingOrders } = await supabase
             .from('orders')
             .select('table_id')
@@ -313,17 +269,85 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             .not('table_id', 'is', null)
             .order('created_at', { ascending: false })
             .limit(1);
-            
-          if (existingOrders && existingOrders.length > 0 && existingOrders[0].table_id) {
+
+          if (existingOrders && existingOrders.length > 0) {
+            // If orders exist with this session code, use the same table ID
             finalTableId = existingOrders[0].table_id;
-            
-            // Update the session with this table ID for future reference
-            await supabase
-              .from('bill_sessions')
-              .update({ table_id: finalTableId })
-              .eq('id', sessionId);
+          } else {
+            // This is a new session, create a new table ID
+            const { data: existingSplitBills } = await supabase
+              .from('orders')
+              .select('table_id')
+              .eq('restaurant_id', restaurantId)
+              .like('table_id', `${tableId}.%`)
+              .order('table_id', { ascending: false });
+
+            // Get all possible decimal numbers from 1 to the highest used number
+            const usedSuffixes = new Set<number>();
+            let highestSuffix = 0;
+
+            if (existingSplitBills && existingSplitBills.length > 0) {
+              existingSplitBills.forEach(order => {
+                const parts = order.table_id?.split('.');
+                if (parts && parts.length > 1) {
+                  const suffix = parseFloat(parts[1]);
+                  if (!isNaN(suffix)) {
+                    usedSuffixes.add(suffix);
+                    highestSuffix = Math.max(highestSuffix, suffix);
+                  }
+                }
+              });
+            }
+
+            // Find the first available number
+            let nextSuffix = 1;
+            while (nextSuffix <= highestSuffix && usedSuffixes.has(nextSuffix)) {
+              nextSuffix++;
+            }
+
+            // Create new table ID with decimal suffix
+            finalTableId = `${tableId}.${nextSuffix}`;
           }
+          
+          // Store the table ID with the session so future orders use the same table ID
+          await supabase
+            .from('bill_sessions')
+            .update({ table_id: finalTableId })
+            .eq('id', sessionId);
         }
+      } else if (isSplitBill && tableId) {
+        // This is a split bill without a session, use decimal suffix logic
+        const { data: existingSplitBills } = await supabase
+          .from('orders')
+          .select('table_id')
+          .eq('restaurant_id', restaurantId)
+          .like('table_id', `${tableId}.%`)
+          .order('table_id', { ascending: false });
+          
+        // Get all possible decimal numbers from 1 to the highest used number
+        const usedSuffixes = new Set<number>();
+        let highestSuffix = 0;
+
+        if (existingSplitBills && existingSplitBills.length > 0) {
+          existingSplitBills.forEach(order => {
+            const parts = order.table_id?.split('.');
+            if (parts && parts.length > 1) {
+              const suffix = parseFloat(parts[1]);
+              if (!isNaN(suffix)) {
+                usedSuffixes.add(suffix);
+                highestSuffix = Math.max(highestSuffix, suffix);
+              }
+            }
+          });
+        }
+
+        // Find the first available number
+        let nextSuffix = 1;
+        while (nextSuffix <= highestSuffix && usedSuffixes.has(nextSuffix)) {
+          nextSuffix++;
+        }
+        
+        finalTableId = `${tableId}.${nextSuffix}`;
       }
       
       // Prepare order data
@@ -408,7 +432,10 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     tableOrders,
     sessionOrders,
     placeOrder,
-    isLoading
+    isLoading,
+    fetchOrders,
+    fetchTableOrders,
+    fetchSessionOrders
   };
 
   return (

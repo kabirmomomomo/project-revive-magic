@@ -34,10 +34,12 @@ const TableOrders = () => {
     
     displayOrders.forEach(order => {
       if (order.session_code) {
-        if (!groups[order.session_code]) {
-          groups[order.session_code] = [];
+        // Create a unique key for each session code
+        const sessionKey = `session_${order.session_code}`;
+        if (!groups[sessionKey]) {
+          groups[sessionKey] = [];
         }
-        groups[order.session_code].push(order);
+        groups[sessionKey].push(order);
       } else if (order.table_id) {
         // For orders without session code, group by table
         const key = `table_${order.table_id}`;
@@ -146,8 +148,9 @@ const TableOrders = () => {
           // Display by session code
           <div className="space-y-4">
             {Object.entries(ordersBySession).map(([codeOrKey, sessionOrders]) => {
-              const isSessionCode = !codeOrKey.startsWith('table_');
+              const isSessionCode = codeOrKey.startsWith('session_');
               const tableId = isSessionCode ? '' : codeOrKey.replace('table_', '');
+              const sessionCode = isSessionCode ? codeOrKey.replace('session_', '') : '';
               const sessionTotal = calculateTotal(sessionOrders);
               const sessionItems = calculateTotalItems(sessionOrders);
               
@@ -156,7 +159,7 @@ const TableOrders = () => {
                   <h3 className="text-sm font-semibold text-purple-900 flex items-center gap-1 mb-2">
                     <FileStack className="h-4 w-4" />
                     {isSessionCode ? (
-                      `Session: ${codeOrKey}`
+                      `Session: ${sessionCode}`
                     ) : (
                       `Table ${tableId}`
                     )}
