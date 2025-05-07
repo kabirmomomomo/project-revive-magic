@@ -463,9 +463,28 @@
               
               <TabsContent value="table">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {Object.keys(ordersByTable).length > 0 && Object.entries(ordersByTable).map(([tableId, tableOrders]) => {
-                    if (tableId === 'no-table') return null;
-                    
+                  {Object.keys(ordersByTable)
+                    .filter(tableId => tableId !== 'no-table')
+                    .sort((a, b) => {
+                      // Split table IDs into base number and decimal part
+                      const [aBase, aDecimal] = a.split('.').map(Number);
+                      const [bBase, bDecimal] = b.split('.').map(Number);
+                      
+                      // First compare base numbers
+                      if (aBase !== bBase) {
+                        return aBase - bBase;
+                      }
+                      
+                      // If base numbers are equal, compare decimal parts
+                      // If one doesn't have a decimal part, it comes first
+                      if (isNaN(aDecimal) && isNaN(bDecimal)) return 0;
+                      if (isNaN(aDecimal)) return -1;
+                      if (isNaN(bDecimal)) return 1;
+                      
+                      return aDecimal - bDecimal;
+                    })
+                    .map((tableId) => {
+                    const tableOrders = ordersByTable[tableId];
                     const tableTotal = tableOrders.reduce((sum, order) => sum + Number(order.total_amount), 0);
                     const totalItems = tableOrders.reduce(
                       (sum, order) => sum + order.items.reduce((itemSum, item) => itemSum + item.quantity, 0), 

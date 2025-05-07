@@ -171,8 +171,8 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ tableId, sessionId }) => {
           )}
         </Button>
       </DrawerTrigger>
-      <DrawerContent className="px-4 pb-6">
-        <DrawerHeader className="text-left">
+      <DrawerContent className="px-4 pb-6 h-[90vh] md:h-[85vh] flex flex-col">
+        <DrawerHeader className="text-left sticky top-0 bg-white z-10 border-b">
           <div className="flex justify-between items-center">
             <DrawerTitle className="text-xl flex items-center gap-2">
               <Clock className="h-5 w-5" />
@@ -196,16 +196,16 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ tableId, sessionId }) => {
           </div>
         </DrawerHeader>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 overflow-y-auto flex-1 py-4">
           <div className="order-2 lg:order-1">
-            <div className="text-sm text-muted-foreground mb-2">Your Orders</div>
+            <div className="text-sm text-muted-foreground mb-2 sticky top-0 bg-white py-2">Your Orders</div>
             {!hasOrders ? (
               <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-100">
                 <Clock className="mx-auto h-8 w-8 text-gray-300 mb-2" />
                 <p className="text-gray-500">No order history yet</p>
               </div>
             ) : (
-              <div className="space-y-1 max-h-[calc(60vh-2rem)] overflow-y-auto pr-1">
+              <div className="space-y-1 overflow-y-auto">
                 {filteredOrders.map(order => (
                   <OrderHistoryItem
                     key={order.id}
@@ -220,12 +220,14 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ tableId, sessionId }) => {
 
           {tableId && (
             <div className="order-1 lg:order-2">
-              <div className="text-sm text-muted-foreground mb-2">
+              <div className="text-sm text-muted-foreground mb-2 sticky top-0 bg-white py-2">
                 {hasTableOrders
                   ? `Table ${tableId} Orders`
                   : "No orders at this table yet"}
               </div>
-              <TableOrders />
+              <div className="overflow-y-auto">
+                <TableOrders />
+              </div>
             </div>
           )}
         </div>
