@@ -325,7 +325,7 @@
               {orders.length} Orders
             </Badge>
             <Badge className="bg-green-100 text-green-800 hover:bg-green-200 border-green-200 text-xs">
-              ${orders.reduce((sum, order) => sum + Number(order.total_amount), 0).toFixed(2)} Total
+              ₹{orders.reduce((sum, order) => sum + Number(order.total_amount), 0).toFixed(2)} Total
             </Badge>
           </div>
         </div>
@@ -404,7 +404,7 @@
                                   )}
                                 </TableCell>
                                 <TableCell className="text-xs">{order.items.reduce((sum, item) => sum + item.quantity, 0)}</TableCell>
-                                <TableCell className="text-xs">${Number(order.total_amount).toFixed(2)}</TableCell>
+                                <TableCell className="text-xs">₹{Number(order.total_amount).toFixed(2)}</TableCell>
                                 <TableCell>
                                   <Badge 
                                     className={`text-xs ${
@@ -499,7 +499,7 @@
                             </div>
                           </div>
                           <CardDescription>
-                            {totalItems} items · ${tableTotal.toFixed(2)} total
+                            {totalItems} items · ₹{tableTotal.toFixed(2)} total
                           </CardDescription>
                         </CardHeader>
                         <CardContent className="pt-4">
@@ -531,7 +531,7 @@
                                       )}
                                     </span>
                                     <div className="flex items-center gap-2">
-                                      <span>${(item.price * item.quantity).toFixed(2)}</span>
+                                      <span>₹{(item.price * item.quantity).toFixed(2)}</span>
                                       <Button
                                         variant="ghost"
                                         size="icon"
@@ -549,7 +549,7 @@
                                 ))}
                                 <Separator className="my-2" />
                                 <div className="flex justify-between items-center mt-1">
-                                  <span className="text-sm">${Number(order.total_amount).toFixed(2)}</span>
+                                  <span className="text-sm">₹{Number(order.total_amount).toFixed(2)}</span>
                                   <div className="flex space-x-1">
                                     {order.status === 'placed' && (
                                       <Button 
@@ -662,14 +662,14 @@
                                           <span className="text-gray-500"> ({item.variant_name})</span>
                                         )}
                                       </span>
-                                      <span>${(item.price * item.quantity).toFixed(2)}</span>
+                                      <span>₹{(item.price * item.quantity).toFixed(2)}</span>
                                     </div>
                                   ))}
                                 </div>
                                 <Separator className="my-2" />
                                 <div className="flex justify-between items-center">
                                   <span className="font-medium text-xs">
-                                    ${Number(order.total_amount).toFixed(2)}
+                                    ₹{Number(order.total_amount).toFixed(2)}
                                   </span>
                                   <div className="flex gap-1">
                                     {order.status === 'placed' && (

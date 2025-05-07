@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useCart } from "@/contexts/CartContext";
 import { Button } from "@/components/ui/button";
@@ -107,8 +106,8 @@ const Cart: React.FC<CartProps> = ({ tableId, sessionId, sessionCode, isSessionO
                             Variant: {item.selectedVariant.name}
                           </p>
                         )}
-                        <p className="text-sm text-muted-foreground">
-                          ${item.selectedVariant ? parseFloat(item.selectedVariant.price).toFixed(2) : parseFloat(item.price).toFixed(2)}
+                        <p className="text-sm text-gray-600">
+                          ₹{item.selectedVariant ? parseFloat(item.selectedVariant.price).toFixed(2) : parseFloat(item.price).toFixed(2)}
                         </p>
                       </div>
                       <Button
@@ -145,7 +144,9 @@ const Cart: React.FC<CartProps> = ({ tableId, sessionId, sessionCode, isSessionO
                         </Button>
                       </div>
                       <div className="ml-auto font-medium text-purple-900">
-                        ${((item.selectedVariant ? parseFloat(item.selectedVariant.price) : parseFloat(item.price)) * item.quantity).toFixed(2)}
+                        <span className="text-sm font-medium">
+                          ₹{((item.selectedVariant ? parseFloat(item.selectedVariant.price) : parseFloat(item.price)) * item.quantity).toFixed(2)}
+                        </span>
                       </div>
                     </div>
                   </div>

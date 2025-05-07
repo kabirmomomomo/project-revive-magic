@@ -93,7 +93,7 @@ const OrderHistoryItem = ({ order, isOpen, onToggle }: {
                     <span className="text-gray-500 text-xs"> ({item.variant_name})</span>
                   )}
                 </div>
-                <div className="text-gray-900">${(item.price * item.quantity).toFixed(2)}</div>
+                <div className="text-gray-900">₹{(item.price * item.quantity).toFixed(2)}</div>
               </div>
             ))}
             <div className="border-t border-gray-200 mt-2 pt-2 flex justify-between text-sm font-medium">

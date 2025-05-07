@@ -124,49 +124,28 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     try {
       console.log('Fetching orders for restaurant:', restaurantId, 'table:', tableId);
       
-      // Get all orders for this table, including those with different session codes
-      const { data: allOrders, error } = await supabase
+      // Get the current session code
+      const currentSessionCode = localStorage.getItem("billSessionCode");
+      
+      // Only fetch orders for this table with the current session code
+      const { data: tableOrders, error } = await supabase
         .from('orders')
         .select(`
           *,
           items:order_items(*)
         `)
         .eq('restaurant_id', restaurantId)
-        .or(`table_id.eq.${tableId},table_id.like.${tableId}%`)
+        .eq('table_id', tableId)
+        .eq('session_code', currentSessionCode)  // Only get orders with the current session code
         .order('created_at', { ascending: false });
         
       if (error) {
         console.error('Error fetching table orders:', error);
         throw error;
       }
-
-      // Group orders by session code
-      const ordersBySession = (allOrders || []).reduce((acc: Record<string, Order[]>, order: Order) => {
-        const key = order.session_code || 'no_session';
-        if (!acc[key]) {
-          acc[key] = [];
-        }
-        acc[key].push(order);
-        return acc;
-      }, {});
-
-      // For each session group, create a unique table ID
-      const processedOrders = Object.entries(ordersBySession).flatMap(([sessionCode, orders]: [string, Order[]]) => {
-        if (sessionCode === 'no_session') {
-          // For orders without session code, keep original table ID
-          return orders;
-        }
-
-        // For orders with session code, add a suffix based on the session code
-        const suffix = sessionCode.substring(0, 1).toUpperCase();
-        return orders.map(order => ({
-          ...order,
-          table_id: `${tableId}${suffix}`
-        }));
-      });
       
-      console.log('Table orders fetched:', processedOrders.length || 0);
-      setTableOrders(processedOrders || []);
+      console.log('Table orders fetched:', tableOrders?.length || 0);
+      setTableOrders(tableOrders || []);
     } catch (error) {
       console.error('Error in fetchTableOrders:', error);
       toast.error('Failed to load table orders');
