@@ -53,11 +53,11 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       } else {
         // Item with this variant doesn't exist, add new item
         const variantInfo = variant ? ` (${variant.name})` : '';
-        toast({
-          title: "Added to cart",
-          description: `${item.name}${variantInfo} added to your cart`,
-          className: "bg-purple-100 border-purple-200 text-purple-900",
-        });
+        // toast({
+        //   title: "Added to cart",
+        //   description: `${item.name}${variantInfo} added to your cart`,
+        //   className: "bg-purple-100 border-purple-200 text-purple-900",
+        // });
         
         return [...prevItems, { 
           ...item, 
@@ -104,10 +104,10 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const clearCart = useCallback(() => {
     setCartItems([]);
-    toast({
-      title: "Cart cleared",
-      description: "Your cart has been cleared",
-    });
+    // toast({
+    //   title: "Cart cleared",
+    //   description: "Your cart has been cleared",
+    // });
   }, []);
 
   // Memoize calculated values to prevent recalculation on every render

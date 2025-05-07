@@ -76,7 +76,7 @@ const MenuEditor = () => {
   const saveMenuMutation = useMutation({
     mutationFn: saveRestaurantMenu,
     onSuccess: () => {
-      toast.success("Changes saved successfully");
+      // toast.success("Changes saved successfully");
     },
     onError: (error) => {
       toast.error("Failed to save changes. Please try again.");
@@ -283,7 +283,7 @@ const MenuEditor = () => {
           saveMenuMutation.mutate(restaurantToSave, {
             onSuccess: () => {
               markChangesAsSaved();
-              toast.success("Changes saved successfully");
+              // toast.success("Changes saved successfully");
             },
             onError: (error) => {
               toast.error("Failed to save changes. Please try again.");
@@ -299,7 +299,7 @@ const MenuEditor = () => {
     saveMenuMutation.mutate(restaurant, {
       onSuccess: () => {
         markChangesAsSaved();
-        toast.success("Changes saved successfully");
+        // toast.success("Changes saved successfully");
       },
       onError: (error) => {
         toast.error("Failed to save changes. Please try again.");
@@ -900,7 +900,7 @@ const MenuEditor = () => {
               <div className="space-y-1">
                 <h3 className="text-lg font-medium">Orders Settings</h3>
                 <p className="text-sm text-gray-500">
-                  Toggle ordering functionality in your menu preview
+                  {/* Toggle ordering functionality in your menu preview */}
                 </p>
               </div>
               <div className="flex items-center space-x-2">

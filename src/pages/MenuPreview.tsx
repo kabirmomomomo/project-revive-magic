@@ -139,12 +139,12 @@ const MenuPreview = () => {
     restaurantToDisplay?.ordersEnabled !== false,
   [restaurantToDisplay]);
 
-  // Initialize first category as open - optimized to run only when needed
+  // Initialize all categories as collapsed by default
   useEffect(() => {
     if (restaurantToDisplay && restaurantToDisplay.categories.length > 0) {
       const initialOpenState: Record<string, boolean> = {};
-      restaurantToDisplay.categories.forEach((category, index) => {
-        initialOpenState[category.id] = index === 0; // Open only the first category
+      restaurantToDisplay.categories.forEach((category) => {
+        initialOpenState[category.id] = false; // All collapsed
       });
       setOpenCategories(initialOpenState);
     }
