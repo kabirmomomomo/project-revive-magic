@@ -53,7 +53,7 @@ const OrderHistoryItem = ({ order, isOpen, onToggle }: {
         </div>
         <div className="flex items-center gap-3">
           <div className="text-right">
-            <div className="font-medium">${Number(order.total_amount).toFixed(2)}</div>
+            <div className="font-medium">₹{Number(order.total_amount).toFixed(2)}</div>
             <div className="text-xs text-gray-500">
               {order.items.reduce((sum: number, item: any) => sum + item.quantity, 0)} items
             </div>
@@ -98,7 +98,7 @@ const OrderHistoryItem = ({ order, isOpen, onToggle }: {
             ))}
             <div className="border-t border-gray-200 mt-2 pt-2 flex justify-between text-sm font-medium">
               <div className="text-gray-700">Total</div>
-              <div className="text-purple-700">${Number(order.total_amount).toFixed(2)}</div>
+              <div className="text-purple-700">₹{Number(order.total_amount).toFixed(2)}</div>
             </div>
           </div>
         </div>
@@ -223,7 +223,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ tableId, sessionId }) => {
               <div className="text-sm text-muted-foreground mb-2 sticky top-0 bg-white py-2">
                 {hasTableOrders
                   ? `Table ${tableId} Orders`
-                  : "No orders at this table yet"}
+                  : ""}
               </div>
               <div className="overflow-y-auto">
                 <TableOrders />
