@@ -1,18 +1,19 @@
-
 import React, { useState } from 'react';
-import { Clock, ChevronDown, ChevronUp, Smartphone, Receipt, Users, Table } from 'lucide-react';
+import { Clock, ChevronDown, ChevronUp, Smartphone, Receipt, Users, Table, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import { useOrders } from '@/contexts/OrderContext';
+import { useParams } from 'react-router-dom';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
 import {
   Drawer,
   DrawerContent,
   DrawerHeader,
   DrawerTitle,
   DrawerTrigger,
-} from '@/components/ui/drawer';
-import { Badge } from '@/components/ui/badge';
+} from "@/components/ui/drawer";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import TableOrders from './TableOrders';
 
 interface OrderHistoryProps {
@@ -109,7 +110,30 @@ const OrderHistoryItem = ({ order, isOpen, onToggle }: {
 const OrderHistory: React.FC<OrderHistoryProps> = ({ tableId, sessionId }) => {
   const [openStates, setOpenStates] = useState<Record<string, boolean>>({});
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const { orders, tableOrders } = useOrders();
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const { orders, tableOrders, fetchOrders, fetchTableOrders, fetchSessionOrders } = useOrders();
+  const { menuId } = useParams();
+
+  const handleRefresh = async () => {
+    if (!menuId) return;
+    
+    setIsRefreshing(true);
+    try {
+      await fetchOrders(menuId);
+      if (tableId) {
+        await fetchTableOrders(menuId, tableId);
+      }
+      if (sessionId) {
+        await fetchSessionOrders(menuId, sessionId);
+      }
+      toast.success('Orders refreshed successfully');
+    } catch (error) {
+      console.error('Error refreshing orders:', error);
+      toast.error('Failed to refresh orders');
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   const toggleOrder = (orderId: string) => {
     setOpenStates(prev => ({
@@ -149,16 +173,27 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ tableId, sessionId }) => {
       </DrawerTrigger>
       <DrawerContent className="px-4 pb-6">
         <DrawerHeader className="text-left">
-          <DrawerTitle className="text-xl flex items-center gap-2">
-            <Clock className="h-5 w-5" />
-            Order History
-            {sessionId && (
-              <Badge variant="outline" className="ml-2 bg-purple-50 text-purple-700 border-purple-200">
-                <Users className="h-3 w-3 mr-1" />
-                {localStorage.getItem("billSessionCode") || "Session"}
-              </Badge>
-            )}
-          </DrawerTitle>
+          <div className="flex justify-between items-center">
+            <DrawerTitle className="text-xl flex items-center gap-2">
+              <Clock className="h-5 w-5" />
+              Order History
+              {sessionId && (
+                <Badge variant="outline" className="ml-2 bg-purple-50 text-purple-700 border-purple-200">
+                  <Users className="h-3 w-3 mr-1" />
+                  {localStorage.getItem("billSessionCode") || "Session"}
+                </Badge>
+              )}
+            </DrawerTitle>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="h-8 w-8"
+            >
+              <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
+            </Button>
+          </div>
         </DrawerHeader>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

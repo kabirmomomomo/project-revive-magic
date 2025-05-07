@@ -80,7 +80,13 @@ export const setupDatabase = async () => {
             name TEXT NOT NULL,
             description TEXT,
             price TEXT NOT NULL,
+            old_price TEXT,
+            weight TEXT,
+            image_url TEXT,
+            is_visible BOOLEAN DEFAULT true,
+            is_available BOOLEAN DEFAULT true,
             category_id UUID NOT NULL REFERENCES menu_categories(id) ON DELETE CASCADE,
+            dietary_type TEXT,
             "order" INTEGER DEFAULT 0,
             created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()),
             updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
@@ -91,6 +97,36 @@ export const setupDatabase = async () => {
       if (createItemsError) {
         console.error('Error creating menu_items table:', createItemsError);
         toast.error('Could not create menu_items table. Some features may not work.');
+        return false;
+      }
+    }
+
+    // Create menu_item_variants table
+    const { data: variantsData, error: variantsError } = await supabase
+      .from('menu_item_variants')
+      .select('count(*)', { count: 'exact' });
+
+    if (variantsError && variantsError.code === 'PGRST116') {
+      // Table doesn't exist, create it
+      const { error: createVariantsError } = await supabase.rpc(
+        'create_table_if_not_exists',
+        {
+          table_name: 'menu_item_variants',
+          table_definition: `
+            id UUID PRIMARY KEY,
+            menu_item_id UUID NOT NULL REFERENCES menu_items(id) ON DELETE CASCADE,
+            name TEXT NOT NULL,
+            price TEXT NOT NULL,
+            "order" INTEGER DEFAULT 0,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()),
+            updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
+          `
+        }
+      );
+
+      if (createVariantsError) {
+        console.error('Error creating menu_item_variants table:', createVariantsError);
+        toast.error('Could not create menu_item_variants table. Some features may not work.');
         return false;
       }
     }

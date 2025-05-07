@@ -10,9 +10,9 @@ import TableQRDialog from "@/components/menu/TableQRDialog";
 
 interface EditorHeaderProps {
   restaurant: RestaurantUI;
-  handleSaveMenu: () => void;
-  handleSaveRestaurantDetails: (details: Partial<RestaurantUI>) => void;
-  signOut: () => void;
+  handleSaveMenu?: () => void;
+  handleSaveRestaurantDetails: (details: Partial<RestaurantUI>) => Promise<void>;
+  signOut: () => Promise<void>;
   isSaving: boolean;
 }
 
