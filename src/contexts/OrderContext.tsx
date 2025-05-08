@@ -32,13 +32,15 @@ interface Order {
 
 interface OrderContextType {
   orders: Order[];
-  placeOrder: (restaurantId: string, tableId?: string, sessionId?: string) => Promise<void>;
+  placeOrder: (restaurantId: string, tableId?: string, sessionId?: string, phoneNumber?: string, userName?: string) => Promise<void>;
   isLoading: boolean;
   tableOrders: Order[];
   sessionOrders: Order[];
   fetchOrders: (restaurantId: string) => Promise<void>;
   fetchTableOrders: (restaurantId: string, tableId: string) => Promise<void>;
-  fetchSessionOrders: (restaurantId: string, sessionId: string) => Promise<void>;
+  fetchSessionOrders: (restaurantId: string, phoneNumber: string) => Promise<void>;
+  userName: string;
+  setUserName: React.Dispatch<React.SetStateAction<string>>;
 }
 
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
@@ -48,6 +50,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [tableOrders, setTableOrders] = useState<Order[]>([]);
   const [sessionOrders, setSessionOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [userName, setUserName] = useState<string>("");
   const { cartItems, getCartTotal, clearCart } = useCart();
   const [searchParams] = useSearchParams();
   const deviceId = getDeviceId();
@@ -79,23 +82,23 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       subscribeToTableOrders(restaurantIdFromUrl, tableId);
     }
     
-    if (sessionId && restaurantIdFromUrl) {
-      // Check if session is expired
+    // Use phone number as session code for session subscription
+    const phoneNumberSession = localStorage.getItem("billSessionCode");
+    if (phoneNumberSession && restaurantIdFromUrl) {
       if (isSessionExpired()) {
         clearExpiredSession();
         toast.error("Your session has expired. Please start a new bill.");
         return;
       }
-
-      console.log('Session ID detected:', sessionId);
-      fetchSessionOrders(restaurantIdFromUrl, sessionId);
-      subscribeToSessionOrders(restaurantIdFromUrl, sessionId);
+      console.log('Session code (phone) detected:', phoneNumberSession);
+      fetchSessionOrders(restaurantIdFromUrl, phoneNumberSession);
+      subscribeToSessionOrders(restaurantIdFromUrl, phoneNumberSession);
     }
     
     return () => {
       supabase.removeAllChannels();
     };
-  }, [tableId, restaurantIdFromUrl, sessionId]);
+  }, [tableId, restaurantIdFromUrl]);
 
   const fetchOrders = async (restaurantId: string) => {
     try {
@@ -124,27 +127,20 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const fetchTableOrders = async (restaurantId: string, tableId: string) => {
     try {
       console.log('Fetching orders for restaurant:', restaurantId, 'table:', tableId);
-      
-      // Get the current session code
+      // Get the current session code (phone number)
       const currentSessionCode = localStorage.getItem("billSessionCode");
-      
-      // Only fetch orders for this table with the current session code
+      // Only fetch orders for this table with the current session code (phone number)
       const { data: tableOrders, error } = await supabase
         .from('orders')
-        .select(`
-          *,
-          items:order_items(*)
-        `)
+        .select(`*, items:order_items(*)`)
         .eq('restaurant_id', restaurantId)
         .eq('table_id', tableId)
-        .eq('session_code', currentSessionCode)  // Only get orders with the current session code
+        .eq('session_code', currentSessionCode)
         .order('created_at', { ascending: false });
-        
       if (error) {
         console.error('Error fetching table orders:', error);
         throw error;
       }
-      
       console.log('Table orders fetched:', tableOrders?.length || 0);
       setTableOrders(tableOrders || []);
     } catch (error) {
@@ -153,12 +149,12 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
   
-  const fetchSessionOrders = async (restaurantId: string, sessionId: string) => {
+  const fetchSessionOrders = async (restaurantId: string, phoneNumber: string) => {
     try {
-      console.log('Fetching orders for restaurant:', restaurantId, 'session:', sessionId);
+      console.log('Fetching orders for restaurant:', restaurantId, 'session:', phoneNumber);
       
       // Get the current session code
-      const currentSessionCode = localStorage.getItem("billSessionCode");
+      const currentSessionCode = phoneNumber;
       
       // Fetch orders for the current session
       const { data, error } = await supabase
@@ -168,7 +164,6 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           items:order_items(*)
         `)
         .eq('restaurant_id', restaurantId)
-        .eq('session_id', sessionId)
         .eq('session_code', currentSessionCode)  // Only get orders with the current session code
         .order('created_at', { ascending: false });
         
@@ -209,21 +204,21 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return channel;
   };
   
-  const subscribeToSessionOrders = (restaurantId: string, sessionId: string) => {
-    console.log('Setting up subscription for restaurant:', restaurantId, 'session:', sessionId);
+  const subscribeToSessionOrders = (restaurantId: string, phoneNumber: string) => {
+    console.log('Setting up subscription for restaurant:', restaurantId, 'session (phone):', phoneNumber);
     const channel = supabase
-      .channel(`session-orders-${restaurantId}-${sessionId}`)
+      .channel(`session-orders-${restaurantId}-${phoneNumber}`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
           table: 'orders',
-          filter: `restaurant_id=eq.${restaurantId} AND session_id=eq.${sessionId}`
+          filter: `restaurant_id=eq.${restaurantId} AND session_code=eq.${phoneNumber}`
         },
         async (payload) => {
           console.log('Session orders changed:', payload);
-          await fetchSessionOrders(restaurantId, sessionId);
+          await fetchSessionOrders(restaurantId, phoneNumber);
         }
       )
       .subscribe((status) => {
@@ -233,7 +228,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return channel;
   };
 
-  const placeOrder = async (restaurantId: string, tableId?: string, sessionId?: string) => {
+  const placeOrder = async (restaurantId: string, tableId?: string, sessionId?: string, phoneNumber?: string, userNameParam?: string) => {
     if (cartItems.length === 0) {
       toast.error('Your cart is empty');
       return;
@@ -241,17 +236,20 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     setIsLoading(true);
     try {
+      const sessionCodeFromUrl = searchParams.get('sessionCode');
+      const sessionCode = sessionCodeFromUrl || phoneNumber;
+      // Use userNameParam if provided, else context, else URL
+      const userNameToUse = userNameParam || userName || searchParams.get('userName') || undefined;
+
       console.log('Placing order with restaurant ID:', restaurantId);
       console.log('Table ID:', tableId);
       console.log('Session ID:', sessionId);
       console.log('Device ID:', deviceId);
       console.log('Cart items:', cartItems);
-      
-      // Get session code if available
-      const sessionCode = localStorage.getItem("billSessionCode");
+      console.log('Session Code (used for order):', sessionCode);
       
       // Check if we should use a suffix for the table ID
-      const isSessionOwner = localStorage.getItem("billSessionOwner") === "true";
+      const isSessionOwner = sessionId ? true : false;
       const isSplitBill = sessionId && isSessionOwner;
       
       let finalTableId = tableId || '';
@@ -307,46 +305,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             // Create new table ID with decimal suffix
             finalTableId = `${tableId}.${nextSuffix}`;
           }
-          
-          // Store the table ID with the session so future orders use the same table ID
-          await supabase
-            .from('bill_sessions')
-            .update({ table_id: finalTableId })
-            .eq('id', sessionId);
         }
-      } else if (isSplitBill && tableId) {
-        // This is a split bill without a session, use decimal suffix logic
-        const { data: existingSplitBills } = await supabase
-          .from('orders')
-          .select('table_id')
-          .eq('restaurant_id', restaurantId)
-          .like('table_id', `${tableId}.%`)
-          .order('table_id', { ascending: false });
-          
-        // Get all possible decimal numbers from 1 to the highest used number
-        const usedSuffixes = new Set<number>();
-        let highestSuffix = 0;
-
-        if (existingSplitBills && existingSplitBills.length > 0) {
-          existingSplitBills.forEach(order => {
-            const parts = order.table_id?.split('.');
-            if (parts && parts.length > 1) {
-              const suffix = parseFloat(parts[1]);
-              if (!isNaN(suffix)) {
-                usedSuffixes.add(suffix);
-                highestSuffix = Math.max(highestSuffix, suffix);
-              }
-            }
-          });
-        }
-
-        // Find the first available number
-        let nextSuffix = 1;
-        while (nextSuffix <= highestSuffix && usedSuffixes.has(nextSuffix)) {
-          nextSuffix++;
-        }
-        
-        finalTableId = `${tableId}.${nextSuffix}`;
       }
       
       // Prepare order data
@@ -361,35 +320,32 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         session_id?: string;
         session_code?: string;
         is_split_bill?: boolean;
+        phone_number?: string;
       } = {
         restaurant_id: restaurantId,
         device_id: deviceId,
         total_amount: cartTotal,
         status: 'placed',
-        user_name: localStorage.getItem("userName") || undefined
+        user_name: userNameToUse,
+        phone_number: phoneNumber
       };
       
-      // Only add table_id if it exists
+      // Always add session_code and table_id if available
+      if (sessionCode) {
+        orderData.session_code = sessionCode;
+      }
       if (finalTableId) {
         orderData.table_id = finalTableId;
         console.log('Adding table_id to order:', orderData.table_id);
       }
-      
-      // Add session ID and code if available
+      // Add session ID and is_split_bill if available
       if (sessionId) {
         orderData.session_id = sessionId;
-        orderData.session_code = sessionCode;
         orderData.is_split_bill = isSplitBill;
         console.log('Adding session data to order:', { sessionId, sessionCode, isSplitBill });
       }
       
       console.log('Order data to insert:', orderData);
-      console.log('Cart total:', cartTotal);
-      console.log('Device ID:', deviceId);
-      console.log('Restaurant ID:', restaurantId);
-      console.log('Session ID:', sessionId);
-      console.log('Session Code:', sessionCode);
-      console.log('Table ID:', finalTableId);
       
       const { data: order, error: orderError } = await supabase
         .from('orders')
@@ -399,17 +355,10 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       if (orderError) {
         console.error('Error inserting order:', orderError);
-        console.error('Error details:', {
-          message: orderError.message,
-          details: orderError.details,
-          hint: orderError.hint,
-          code: orderError.code
-        });
         throw orderError;
       }
 
-      console.log('Order inserted successfully:', order);
-
+      // Insert order items
       const orderItems = cartItems.map(item => ({
         order_id: order.id,
         restaurant_id: restaurantId,
@@ -421,8 +370,6 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         variant_id: item.selectedVariant?.id
       }));
 
-      console.log('Order items to insert:', orderItems);
-
       const { error: itemsError } = await supabase
         .from('order_items')
         .insert(orderItems);
@@ -432,14 +379,13 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         throw itemsError;
       }
 
-      console.log('Order items inserted successfully');
       clearCart();
       await fetchOrders(restaurantId);
       if (tableId) {
         await fetchTableOrders(restaurantId, tableId);
       }
-      if (sessionId) {
-        await fetchSessionOrders(restaurantId, sessionId);
+      if (sessionCode) {
+        await fetchSessionOrders(restaurantId, sessionCode);
       }
       toast.success('Order placed successfully!');
     } catch (error) {
@@ -458,7 +404,9 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     isLoading,
     fetchOrders,
     fetchTableOrders,
-    fetchSessionOrders
+    fetchSessionOrders,
+    userName,
+    setUserName
   };
 
   return (

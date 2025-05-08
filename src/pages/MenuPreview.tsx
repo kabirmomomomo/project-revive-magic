@@ -363,7 +363,6 @@ const MenuPreview = () => {
         {isOrderingEnabled && (
           <OrderHistory 
             tableId={tableId || undefined} 
-            sessionId={localStorage.getItem("billSessionId") || undefined}
           />
         )}
         

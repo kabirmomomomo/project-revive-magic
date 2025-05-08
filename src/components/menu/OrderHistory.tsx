@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Clock, ChevronDown, ChevronUp, Smartphone, Receipt, Users, Table, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import { useOrders } from '@/contexts/OrderContext';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import {
@@ -18,7 +18,6 @@ import TableOrders from './TableOrders';
 
 interface OrderHistoryProps {
   tableId?: string;
-  sessionId?: string;
 }
 
 const OrderHistoryItem = ({ order, isOpen, onToggle }: {
@@ -107,24 +106,25 @@ const OrderHistoryItem = ({ order, isOpen, onToggle }: {
   );
 };
 
-const OrderHistory: React.FC<OrderHistoryProps> = ({ tableId, sessionId }) => {
+const OrderHistory: React.FC<OrderHistoryProps> = ({ tableId }) => {
   const [openStates, setOpenStates] = useState<Record<string, boolean>>({});
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { orders, tableOrders, fetchOrders, fetchTableOrders, fetchSessionOrders } = useOrders();
   const { menuId } = useParams();
+  const [searchParams] = useSearchParams();
+  const sessionCode = searchParams.get('sessionCode');
 
   const handleRefresh = async () => {
     if (!menuId) return;
-    
     setIsRefreshing(true);
     try {
       await fetchOrders(menuId);
       if (tableId) {
         await fetchTableOrders(menuId, tableId);
       }
-      if (sessionId) {
-        await fetchSessionOrders(menuId, sessionId);
+      if (sessionCode) {
+        await fetchSessionOrders(menuId, sessionCode);
       }
       toast.success('Orders refreshed successfully');
     } catch (error) {
@@ -142,9 +142,9 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ tableId, sessionId }) => {
     }));
   };
 
-  // Filter orders by sessionId if provided
-  const filteredOrders = sessionId
-    ? orders.filter(order => order.session_id === sessionId)
+  // Filter orders by sessionCode if provided
+  const filteredOrders = sessionCode
+    ? orders.filter(order => order.session_code === sessionCode)
     : orders;
 
   const hasOrders = filteredOrders.length > 0;
@@ -177,10 +177,10 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ tableId, sessionId }) => {
             <DrawerTitle className="text-xl flex items-center gap-2">
               <Clock className="h-5 w-5" />
               Order History
-              {sessionId && (
+              {sessionCode && (
                 <Badge variant="outline" className="ml-2 bg-purple-50 text-purple-700 border-purple-200">
                   <Users className="h-3 w-3 mr-1" />
-                  {localStorage.getItem("billSessionCode") || "Session"}
+                  {sessionCode}
                 </Badge>
               )}
             </DrawerTitle>
@@ -218,12 +218,10 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ tableId, sessionId }) => {
             )}
           </div>
 
-          {tableId && (
+          {sessionCode && (
             <div className="order-1 lg:order-2">
               <div className="text-sm text-muted-foreground mb-2 sticky top-0 bg-white py-2">
-                {hasTableOrders
-                  ? `Table ${tableId} Orders`
-                  : ""}
+                Table Orders
               </div>
               <div className="overflow-y-auto">
                 <TableOrders />

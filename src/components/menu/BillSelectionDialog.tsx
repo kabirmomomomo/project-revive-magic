@@ -13,6 +13,7 @@ import { Users, PlusCircle } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { useOrders } from '@/contexts/OrderContext';
 
 interface BillSelectionDialogProps {
   open: boolean;
@@ -29,8 +30,12 @@ const BillSelectionDialog: React.FC<BillSelectionDialogProps> = ({
 }) => {
   const [sessionCode, setSessionCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [userName, setUserName] = useState("");
-  const [showNameInput, setShowNameInput] = useState(true);
+  const [step, setStep] = useState(1);
+  const [userNameInput, setUserNameInput] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [joining, setJoining] = useState(false);
+  const [joinPhoneNumber, setJoinPhoneNumber] = useState("");
+  const { setUserName } = useOrders();
   const navigate = useNavigate();
 
   // Check for existing valid session when dialog opens
@@ -112,67 +117,94 @@ const BillSelectionDialog: React.FC<BillSelectionDialogProps> = ({
   };
 
   const handleCreateNewBill = async () => {
-    if (!userName.trim()) {
+    if (!userNameInput.trim()) {
       toast.error("Please enter your name");
       return;
     }
-
+    if (!/^\d{10}$/.test(phoneNumber)) {
+      toast.error("Please enter a valid 10-digit phone number");
+      return;
+    }
+    // If friendPhoneNumber is filled, try to join that session instead
+    if (joinPhoneNumber && /^\d{10}$/.test(joinPhoneNumber)) {
+      setIsLoading(true);
+      try {
+        let deviceId = localStorage.getItem("deviceId");
+        if (!deviceId) {
+          deviceId = crypto.randomUUID();
+          localStorage.setItem("deviceId", deviceId);
+        }
+        const code = joinPhoneNumber;
+        // Check if a session with this phone number exists and is active
+        const { data, error } = await supabase
+          .from("bill_sessions")
+          .select("*")
+          .eq("code", code)
+          .eq("is_active", true)
+          .gt("expires_at", new Date().toISOString())
+          .single();
+        if (error || !data) {
+          toast.error("No active session found for this phone number");
+          setIsLoading(false);
+          return;
+        }
+        onOpenChange(false);
+        navigate(`/menu-preview/${restaurantId}?table=${tableId}&sessionCode=${code}&userName=${encodeURIComponent(userNameInput)}`);
+        return;
+      } catch (error) {
+        toast.error("Failed to join friend's bill. Please try again.");
+        setIsLoading(false);
+        return;
+      }
+    }
+    // Otherwise, proceed with normal new bill creation
     setIsLoading(true);
     try {
-      // Get device ID from localStorage or generate a new one
       let deviceId = localStorage.getItem("deviceId");
       if (!deviceId) {
         deviceId = crypto.randomUUID();
         localStorage.setItem("deviceId", deviceId);
       }
-
-      // Generate a unique session code
-      const code = await generateUniqueSessionCode();
-      
-      console.log('Creating new bill session with:', {
-        restaurant_id: restaurantId,
-        table_id: tableId,
-        code,
-        device_id: deviceId,
-        user_name: userName,
-        is_active: true,
-        created_at: new Date().toISOString(),
-        expires_at: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString()
-      });
-
-      // Create a new bill session with expiration
-      const { data, error } = await supabase
+      const code = phoneNumber;
+      // Check if a session with this phone number already exists and is active
+      const { data: existingSession, error: existingError } = await supabase
         .from("bill_sessions")
-        .insert({
-          restaurant_id: restaurantId,
-          table_id: tableId,
-          code: code,
-          device_id: deviceId,
-          user_name: userName,
-          is_active: true,
-          created_at: new Date().toISOString(),
-          expires_at: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString() // 6 hours from now
-        })
-        .select()
+        .select("*")
+        .eq("code", code)
+        .eq("is_active", true)
+        .gt("expires_at", new Date().toISOString())
         .single();
-
-      if (error) {
-        console.error('Error creating bill session:', error);
-        throw error;
+      let sessionData = existingSession;
+      if (!existingSession) {
+        // Create a new bill session with phone number as code
+        const { data, error } = await supabase
+          .from("bill_sessions")
+          .insert({
+            restaurant_id: restaurantId,
+            table_id: tableId,
+            code: code,
+            device_id: deviceId,
+            user_name: userNameInput,
+            is_active: true,
+            created_at: new Date().toISOString(),
+            expires_at: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString()
+          })
+          .select()
+          .single();
+        if (error) {
+          console.error('Error creating bill session:', error);
+          throw error;
+        }
+        sessionData = data;
       }
-
-      console.log('Bill session created successfully:', data);
-
-      // Store session info in localStorage
-      localStorage.setItem("billSessionId", data.id);
-      localStorage.setItem("billSessionCode", data.code);
+      localStorage.setItem("billSessionId", sessionData.id);
+      localStorage.setItem("billSessionCode", code);
       localStorage.setItem("billSessionOwner", "true");
-      localStorage.setItem("billSessionExpiresAt", data.expires_at);
-      localStorage.setItem("userName", userName);
-
-      // Close dialog and navigate to the menu with the new session code
+      localStorage.setItem("billSessionExpiresAt", sessionData.expires_at);
+      localStorage.setItem("userName", userNameInput);
+      localStorage.setItem("phoneNumber", phoneNumber);
       onOpenChange(false);
-      navigate(`/menu-preview/${restaurantId}?table=${tableId}&sessionCode=${data.code}`);
+      navigate(`/menu-preview/${restaurantId}?table=${tableId}&sessionCode=${code}&userName=${encodeURIComponent(userNameInput)}`);
     } catch (error) {
       console.error("Error creating bill session:", error);
       toast.error("Failed to create new bill. Please try again.");
@@ -182,51 +214,44 @@ const BillSelectionDialog: React.FC<BillSelectionDialogProps> = ({
   };
 
   const handleJoinBill = async () => {
-    if (!userName.trim()) {
+    if (!userNameInput.trim()) {
       toast.error("Please enter your name");
       return;
     }
-
-    if (!sessionCode.trim()) {
-      toast.error("Please enter a session code");
+    if (!/^\d{10}$/.test(joinPhoneNumber)) {
+      toast.error("Please enter a valid 10-digit phone number");
       return;
     }
-
     setIsLoading(true);
     try {
-      // Get device ID from localStorage or generate a new one
       let deviceId = localStorage.getItem("deviceId");
       if (!deviceId) {
         deviceId = crypto.randomUUID();
         localStorage.setItem("deviceId", deviceId);
       }
-
-      // Look up the session code and check if it's not expired
+      const code = joinPhoneNumber;
+      // Check if a session with this phone number exists and is active
       const { data, error } = await supabase
         .from("bill_sessions")
         .select("*")
-        .eq("code", sessionCode.toUpperCase())
+        .eq("code", code)
         .eq("is_active", true)
         .gt("expires_at", new Date().toISOString())
         .single();
-
       if (error) throw error;
-
       if (!data) {
         toast.error("Invalid or expired session code");
         return;
       }
-
       // Store session info in localStorage
       localStorage.setItem("billSessionId", data.id);
-      localStorage.setItem("billSessionCode", data.code);
+      localStorage.setItem("billSessionCode", code);
       localStorage.setItem("billSessionOwner", "false");
       localStorage.setItem("billSessionExpiresAt", data.expires_at);
-      localStorage.setItem("userName", userName);
-
-      // Close dialog and navigate to the menu with the session code
+      localStorage.setItem("userName", userNameInput);
+      localStorage.setItem("phoneNumber", joinPhoneNumber);
       onOpenChange(false);
-      navigate(`/menu-preview/${restaurantId}?table=${tableId}&sessionCode=${data.code}`);
+      navigate(`/menu-preview/${restaurantId}?table=${tableId}&sessionCode=${code}`);
     } catch (error) {
       console.error("Error joining bill session:", error);
       toast.error("Failed to join bill. Please try again.");
@@ -248,27 +273,38 @@ const BillSelectionDialog: React.FC<BillSelectionDialogProps> = ({
         </DialogHeader>
 
         <div className="grid gap-4 py-4">
-          {showNameInput ? (
+          {step === 1 && (
             <div className="grid gap-2">
               <Label htmlFor="user-name">Your Name</Label>
               <Input
                 id="user-name"
                 placeholder="Enter your name"
-                value={userName}
-                onChange={(e) => setUserName(e.target.value)}
+                value={userNameInput}
+                onChange={(e) => { setUserNameInput(e.target.value); setUserName(e.target.value); }}
                 className="text-center"
                 disabled={isLoading}
               />
+              <Label htmlFor="phone-number">Phone Number</Label>
+              <Input
+                id="phone-number"
+                placeholder="Enter your phone number"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ""))}
+                maxLength={10}
+                disabled={isLoading}
+              />
               <Button
-                onClick={() => setShowNameInput(false)}
-                disabled={!userName.trim() || isLoading}
+                onClick={() => setStep(2)}
+                disabled={!userNameInput.trim() || !/^\d{10}$/.test(phoneNumber) || isLoading}
                 className="mt-2"
               >
                 Continue
               </Button>
             </div>
-          ) : (
-            <div className="grid gap-2">
+          )}
+
+          {step === 2 && !joining && (
+            <>
               <Button
                 variant="outline"
                 className="h-24 flex flex-col items-center justify-center gap-2 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200"
@@ -293,28 +329,52 @@ const BillSelectionDialog: React.FC<BillSelectionDialogProps> = ({
                 </div>
               </div>
 
-              <div>
-                <Label htmlFor="session-code">Join Friend's Bill</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="session-code"
-                    placeholder="Enter 6-digit code"
-                    value={sessionCode}
-                    onChange={(e) => setSessionCode(e.target.value.toUpperCase())}
-                    maxLength={6}
-                    className="text-center tracking-widest font-mono"
-                    disabled={isLoading}
-                  />
-                  <Button
-                    onClick={handleJoinBill}
-                    disabled={isLoading}
-                    className="whitespace-nowrap"
-                  >
-                    <Users className="h-4 w-4 mr-2" />
-                    Join
-                  </Button>
-                </div>
-              </div>
+              <Button
+                onClick={() => setJoining(true)}
+                disabled={isLoading}
+                className="whitespace-nowrap"
+              >
+                <Users className="h-4 w-4 mr-2" />
+                Join
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => setStep(1)}
+                disabled={isLoading}
+                className="text-xs mt-1"
+              >
+                Back
+              </Button>
+            </>
+          )}
+
+          {step === 2 && joining && (
+            <div className="grid gap-2">
+              <Label htmlFor="join-phone-number">Friend's Phone Number</Label>
+              <Input
+                id="join-phone-number"
+                placeholder="Enter friend's phone number"
+                value={joinPhoneNumber}
+                onChange={e => setJoinPhoneNumber(e.target.value.replace(/\D/g, ""))}
+                maxLength={10}
+                disabled={isLoading}
+              />
+              <Button
+                onClick={handleJoinBill}
+                disabled={isLoading || !userNameInput.trim() || !/^\d{10}$/.test(joinPhoneNumber)}
+                className="whitespace-nowrap"
+              >
+                <Users className="h-4 w-4 mr-2" />
+                Join Bill
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => setJoining(false)}
+                disabled={isLoading}
+                className="text-xs mt-1"
+              >
+                Back
+              </Button>
             </div>
           )}
         </div>

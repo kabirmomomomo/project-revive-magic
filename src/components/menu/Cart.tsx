@@ -25,7 +25,7 @@ const Cart: React.FC<CartProps> = ({ tableId, sessionId, sessionCode, isSessionO
   const [open, setOpen] = useState(false);
   const { menuId } = useParams();
   const { cartItems, removeFromCart, updateQuantity, getCartTotal, getItemCount, clearCart } = useCart();
-  const { placeOrder, isLoading } = useOrders();
+  const { placeOrder, isLoading, userName } = useOrders();
 
   const handleCheckout = async () => {
     if (!menuId) {
@@ -33,8 +33,8 @@ const Cart: React.FC<CartProps> = ({ tableId, sessionId, sessionCode, isSessionO
       return;
     }
     
-    // Pass both tableId and sessionId to the placeOrder function
-    await placeOrder(menuId, tableId, sessionId);
+    // Pass both tableId and sessionId to the placeOrder function, and userName
+    await placeOrder(menuId, tableId, sessionId, sessionCode, userName);
     setOpen(false);
   };
 

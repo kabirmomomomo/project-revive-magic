@@ -1,4 +1,3 @@
-
 import React from "react";
 import QRCode from "react-qr-code";
 import {
@@ -50,7 +49,7 @@ const QRCodeDialog: React.FC<QRCodeDialogProps> = ({ qrCodeValue }) => {
             Scan this code to view this restaurant menu
             {sessionCode && isSessionOwner && (
               <div className="mt-2 p-2 bg-purple-50 text-purple-700 rounded-md">
-                Your bill code: <span className="font-mono font-bold">{sessionCode}</span> 
+                Your bill phone: <span className="font-mono font-bold">{sessionCode}</span> 
                 <span className="ml-1 text-xs">(Share with friends to join)</span>
               </div>
             )}

@@ -114,6 +114,11 @@ const TableOrders = () => {
   console.log('TableOrders component - orders by session:', ordersBySession);
   console.log('TableOrders component - main and split bills:', mainAndSplitBills);
   
+  // Calculate session total
+  const calculateSessionTotal = (orders: typeof displayOrders) => {
+    return orders.reduce((sum, order) => sum + Number(order.total_amount), 0);
+  };
+  
   return (
     <Card className="w-full bg-gradient-to-br from-purple-50 to-white shadow-md border-purple-100">
       <CardHeader className="bg-gradient-to-r from-purple-100 to-indigo-50 rounded-t-lg">
@@ -123,7 +128,7 @@ const TableOrders = () => {
             Table Orders
             {sessionCode && (
               <Badge variant="outline" className="ml-2 bg-purple-100 text-purple-700 border-purple-200">
-                {sessionCode}
+                Phone: {sessionCode}
               </Badge>
             )}
           </CardTitle>
@@ -138,83 +143,69 @@ const TableOrders = () => {
           <span>{calculateTotalItems(displayOrders)} Items</span>
         </div>
       </CardHeader>
-      <CardContent className="pt-4 divide-y divide-purple-100">
-        {displayOrders.length === 0 ? (
-          <div className="py-8 text-center text-muted-foreground">
-            <p>No orders placed at this table yet</p>
-            <p className="text-sm mt-2">Orders will appear here in real-time</p>
-          </div>
-        ) : (
-          // Display by session code
-          <div className="space-y-4">
-            {Object.entries(ordersBySession).map(([codeOrKey, sessionOrders]) => {
-              const isSessionCode = codeOrKey.startsWith('session_');
-              const tableId = isSessionCode ? '' : codeOrKey.replace('table_', '');
-              const sessionCode = isSessionCode ? codeOrKey.replace('session_', '') : '';
-              const sessionTotal = calculateTotal(sessionOrders);
-              const sessionItems = calculateTotalItems(sessionOrders);
+      <CardContent className="p-4">
+        {Object.entries(ordersBySession).map(([codeOrKey, sessionOrders]) => {
+          const isSessionCode = codeOrKey.startsWith('session_');
+          const sessionTotal = calculateSessionTotal(sessionOrders);
+          
+          return (
+            <div key={codeOrKey} className="pt-2 first:pt-0">
+              <h3 className="text-sm font-semibold text-purple-900 flex items-center gap-1 mb-2">
+                <FileStack className="h-4 w-4" />
+                {isSessionCode ? (
+                  `Phone: ${sessionCode}`
+                ) : (
+                  `Table ${codeOrKey.replace('table_', '')}`
+                )}
+              </h3>
               
-              return (
-                <div key={codeOrKey} className="pt-2 first:pt-0">
-                  <h3 className="text-sm font-semibold text-purple-900 flex items-center gap-1 mb-2">
-                    <FileStack className="h-4 w-4" />
-                    {isSessionCode ? (
-                      `Session: ${sessionCode}`
-                    ) : (
-                      `Table ${tableId}`
-                    )}
-                  </h3>
+              {sessionOrders.map((order) => (
+                <div key={order.id} className="py-3 animate-fade-in">
+                  <div className="flex justify-between mb-1">
+                    <div className="text-sm font-medium text-purple-900 flex items-center gap-1">
+                      <Smartphone className="h-3 w-3" />
+                      {order.user_name ? (
+                        <span className="font-semibold">{order.user_name}</span>
+                      ) : (
+                        <span className="text-gray-500">Guest ({order.device_id.substring(0, 6)}...)</span>
+                      )}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {format(new Date(order.created_at), 'h:mm a')}
+                    </div>
+                  </div>
                   
-                  {sessionOrders.map((order) => (
-                    <div key={order.id} className="py-3 animate-fade-in">
-                      <div className="flex justify-between mb-1">
-                        <div className="text-sm font-medium text-purple-900 flex items-center gap-1">
-                          <Smartphone className="h-3 w-3" />
-                          {order.user_name ? (
-                            <span className="font-semibold">{order.user_name}</span>
-                          ) : (
-                            <span className="text-gray-500">Guest ({order.device_id.substring(0, 6)}...)</span>
-                          )}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {format(new Date(order.created_at), 'h:mm a')}
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        {order.items && order.items.map((item) => (
-                          <div key={item.id} className="flex justify-between text-sm">
-                            <span className="text-gray-600">
-                              {item.quantity}× {item.item_name}
-                              {item.variant_name && (
-                                <span className="text-gray-500 text-xs"> ({item.variant_name})</span>
-                              )}
-                            </span>
-                            <span className="text-gray-900 font-medium">
-                              ₹{(item.price * item.quantity).toFixed(2)}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
+                  {order.items && order.items.map((item) => (
+                    <div key={item.id} className="flex justify-between text-sm">
+                      <span className="text-gray-600">
+                        {item.quantity}× {item.item_name}
+                        {item.variant_name && (
+                          <span className="text-gray-500 text-xs"> ({item.variant_name})</span>
+                        )}
+                      </span>
+                      <span className="text-gray-900 font-medium">
+                        ₹{(item.price * item.quantity).toFixed(2)}
+                      </span>
                     </div>
                   ))}
-                  
-                  <div className="pt-3 flex justify-between font-medium border-t border-purple-100 mt-2">
-                    <span>{isSessionCode ? 'Session Total' : `Table ${tableId} Total`}</span>
-                    <span className="text-purple-900">₹{sessionTotal.toFixed(2)}</span>
-                  </div>
                 </div>
-              );
-            })}
-            
-            {/* Overall Total */}
-            <div className="pt-4 flex justify-between font-medium text-lg border-t border-purple-100">
-              <span>Grand Total</span>
-              <span className="text-purple-900">
-                ₹{calculateTotal(displayOrders).toFixed(2)}
-              </span>
+              ))}
+              
+              <div className="pt-3 flex justify-between font-medium border-t border-purple-100 mt-2">
+                <span>{isSessionCode ? 'Session Total' : `Table ${codeOrKey.replace('table_', '')} Total`}</span>
+                <span className="text-purple-900">₹{sessionTotal.toFixed(2)}</span>
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })}
+        
+        {/* Overall Total */}
+        <div className="pt-4 flex justify-between font-medium text-lg border-t border-purple-100">
+          <span>Grand Total</span>
+          <span className="text-purple-900">
+            ₹{calculateTotal(displayOrders).toFixed(2)}
+          </span>
+        </div>
       </CardContent>
     </Card>
   );
