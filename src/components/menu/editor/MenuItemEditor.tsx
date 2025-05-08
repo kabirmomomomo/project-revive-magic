@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -56,10 +57,9 @@ interface MenuItemEditorProps {
     optionId: string
   ) => void;
   handleImageUpload: (categoryId: string, itemId: string, file: File) => void;
-  handleSaveMenu?: () => void;
+  handleSaveMenu: () => void;
   setActiveItemId: (itemId: string | null) => void;
   isSaving: boolean;
-  handleDietaryTypeChange: (value: string) => void;
 }
 
 const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
@@ -79,7 +79,6 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
   handleSaveMenu,
   setActiveItemId,
   isSaving,
-  handleDietaryTypeChange,
 }) => {
   const [selectedTab, setSelectedTab] = useState("details");
   const [imagePreview, setImagePreview] = useState<string | null>(activeItem.image_url || null);
@@ -115,6 +114,27 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
       reader.readAsDataURL(file);
       handleImageUpload(activeCategoryId, activeItem.id, file);
     }
+  };
+
+  const handleDietaryTypeChange = (value: string) => {
+    // Log before updating to see the current and new values
+    console.log(`Changing dietary type from ${activeItem.dietary_type} to ${value === "none" ? null : value}`);
+    
+    // Make sure to pass the correct type value to the updateMenuItem function
+    updateMenuItem(
+      activeCategoryId,
+      activeItem.id,
+      "dietary_type",
+      value === "none" ? null : value as "veg" | "non-veg"
+    );
+    
+    // Log the change to ensure it's being properly captured
+    console.log(`Set dietary type to: ${value}, activeItem now shows: ${activeItem.dietary_type}`);
+    
+    // Immediately save the menu to persist the change
+    setTimeout(() => {
+      handleSaveMenu();
+    }, 100);
   };
 
   return (
@@ -199,7 +219,7 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="item-price">Price (₹)</Label>
+                    <Label htmlFor="item-price">Price</Label>
                     <Input
                       id="item-price"
                       ref={priceInputRef}
@@ -215,7 +235,7 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
                     />
                   </div>
                   <div>
-                    <Label htmlFor="item-old-price">Old Price (₹)</Label>
+                    <Label htmlFor="item-old-price">Old Price</Label>
                     <Input
                       id="item-old-price"
                       value={activeItem.old_price || ""}
@@ -248,31 +268,28 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
                 
                 {/* Dietary Type Selection */}
                 <div>
-                  <Label>Dietary Type</Label>
-                  <RadioGroup
+                  <Label htmlFor="dietary-type" className="mb-2 block">Dietary Type</Label>
+                  <RadioGroup 
                     value={activeItem.dietary_type || "none"}
                     onValueChange={handleDietaryTypeChange}
-                    className="flex gap-4"
+                    className="flex flex-col space-y-1"
                   >
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="none" id="none" />
-                      <Label htmlFor="none" className="flex items-center gap-1">
-                        <X className="h-4 w-4" />
-                        None
+                      <RadioGroupItem value="none" id="dietary-none" />
+                      <Label htmlFor="dietary-none" className="cursor-pointer">Not specified</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="veg" id="dietary-veg" />
+                      <Label htmlFor="dietary-veg" className="cursor-pointer flex items-center">
+                        <LeafyGreen className="h-4 w-4 mr-1 text-green-600" />
+                        Vegetarian
                       </Label>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="veg" id="veg" />
-                      <Label htmlFor="veg" className="flex items-center gap-1">
-                        <LeafyGreen className="h-4 w-4 text-green-500" />
-                        Veg
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="non-veg" id="non-veg" />
-                      <Label htmlFor="non-veg" className="flex items-center gap-1">
-                        <Beef className="h-4 w-4 text-red-500" />
-                        Non-veg
+                      <RadioGroupItem value="non-veg" id="dietary-non-veg" />
+                      <Label htmlFor="dietary-non-veg" className="cursor-pointer flex items-center">
+                        <Beef className="h-4 w-4 mr-1 text-red-600" />
+                        Non-Vegetarian
                       </Label>
                     </div>
                   </RadioGroup>
@@ -337,7 +354,7 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
                         </div>
                         <div>
                           <Label htmlFor={`variant-price-${variant.id}`}>
-                            Variant Price (₹)
+                            Variant Price
                           </Label>
                           <Input
                             id={`variant-price-${variant.id}`}
@@ -448,7 +465,7 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
                                   </div>
                                   <div>
                                     <Label htmlFor={`option-price-${option.id}`}>
-                                      Option Price (₹)
+                                      Option Price
                                     </Label>
                                     <Input
                                       id={`option-price-${option.id}`}

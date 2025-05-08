@@ -60,7 +60,6 @@ export interface RestaurantUI {
   wifi_password?: string;
   opening_time?: string;
   closing_time?: string;
-  ordersEnabled?: boolean;
   payment_qr_code?: string;
   upi_id?: string;
 }
@@ -80,10 +79,6 @@ const getFromCache = (key: string) => {
 
 const setCache = (key: string, data: any) => {
   cache.set(key, { data, timestamp: Date.now() });
-};
-
-const removeFromCache = (key: string) => {
-  cache.delete(key);
 };
 
 export const generateStableRestaurantId = (userId: string | undefined) => {
@@ -317,8 +312,6 @@ export const getRestaurantById = async (id: string): Promise<RestaurantUI | null
   const result = {
     ...restaurant,
     categories: categoriesWithItems,
-    // Map the database column name to our interface property
-    ordersEnabled: restaurant.orders_enabled
   };
 
   // Cache the result
@@ -381,104 +374,66 @@ export const saveRestaurantMenu = async (restaurant: RestaurantUI) => {
   // Invalidate cache
   cache.delete(`restaurant_${restaurant.id}`);
 
-  const { id, name, description, categories, image_url, google_review_link, location, phone, wifi_password, opening_time, closing_time, ordersEnabled, payment_qr_code, upi_id } = restaurant;
+  const { id, name, description, categories, image_url, google_review_link, location, phone, wifi_password, opening_time, closing_time, payment_qr_code, upi_id } = restaurant;
   
   try {
     const { data: { user } } = await supabase.auth.getUser();
     const userId = user?.id || null;
     
-    // Check if we're only saving a single item
-    const isSingleItemUpdate = categories.length === 1 && categories[0].items.length === 1;
-    const isOrdersOnlyUpdate = categories.length === 0 && ordersEnabled !== undefined;
+    const { error: restaurantError } = await supabase
+      .from('restaurants')
+      .upsert({
+        id,
+        name,
+        description,
+        image_url,
+        google_review_link,
+        location,
+        phone,
+        wifi_password,
+        opening_time,
+        closing_time,
+        payment_qr_code,
+        upi_id,
+        user_id: userId,
+        updated_at: new Date().toISOString()
+      });
     
-    if (!isSingleItemUpdate && !isOrdersOnlyUpdate) {
-      // Map our interface property to the database column name
-      const { error: restaurantError } = await supabase
-        .from('restaurants')
-        .upsert({
-          id,
-          name,
-          description,
-          image_url,
-          google_review_link,
-          location,
-          phone,
-          wifi_password,
-          opening_time,
-          closing_time,
-          orders_enabled: ordersEnabled,
-          payment_qr_code,
-          upi_id,
-          user_id: userId,
-          updated_at: new Date().toISOString()
-        });
-      
-      if (restaurantError) {
-        console.error("Restaurant update error:", restaurantError);
-        if (await handleRelationDoesNotExistError(restaurantError)) {
-          return saveRestaurantMenu(restaurant);
-        }
-        throw restaurantError;
+    if (restaurantError) {
+      if (await handleRelationDoesNotExistError(restaurantError)) {
+        return saveRestaurantMenu(restaurant);
       }
-    } else if (isOrdersOnlyUpdate) {
-      // Only update the orders_enabled field
-      const { error: restaurantError } = await supabase
-        .from('restaurants')
-        .update({
-          orders_enabled: ordersEnabled,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', id);
-      
-      if (restaurantError) {
-        console.error("Restaurant orders update error:", restaurantError);
-        throw restaurantError;
-      }
-      
-      return { success: true, isLocalOnly: false };
+      throw restaurantError;
     }
     
-    // For single item updates, we only need to update that specific item
-    if (isSingleItemUpdate) {
-      const category = categories[0];
-      const item = category.items[0];
-      
-      console.log(`Saving single item ${item.id} with dietary_type: ${item.dietary_type}`);
-      
-      // Only update the dietary_type field for single item updates
-      const { error: itemError } = await supabase
-        .from('menu_items')
-        .update({
-          dietary_type: item.dietary_type,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', item.id);
-      
-      if (itemError) {
-        console.error("Error updating menu item:", itemError, {
-          item_id: item.id,
-          dietary_type: item.dietary_type
-        });
-        
-        if (await handleRelationDoesNotExistError(itemError)) {
-          const { error: retryError } = await supabase
-            .from('menu_items')
-            .update({
-              dietary_type: item.dietary_type,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', item.id);
-          
-          if (retryError) throw retryError;
-        } else {
-          throw itemError;
-        }
+    const { data: existingCategories, error: getCategoriesError } = await supabase
+      .from('menu_categories')
+      .select('id')
+      .eq('restaurant_id', id);
+    
+    if (getCategoriesError) {
+      if (await handleRelationDoesNotExistError(getCategoriesError)) {
+      } else {
+        throw getCategoriesError;
       }
-      
-      return { success: true, isLocalOnly: false };
     }
     
-    // For full menu updates, process all categories and items
+    const newCategoryIds = categories.map(c => c.id);
+    const categoriesToDelete = existingCategories
+      ?.filter(c => !newCategoryIds.includes(c.id))
+      .map(c => c.id) || [];
+    
+    if (categoriesToDelete.length > 0) {
+      const { error: deleteCategoriesError } = await supabase
+        .from('menu_categories')
+        .delete()
+        .in('id', categoriesToDelete);
+      
+      if (deleteCategoriesError && deleteCategoriesError.code !== 'PGRST116') {
+        throw deleteCategoriesError;
+      }
+    }
+    
     for (let [index, category] of categories.entries()) {
       const { error: categoryError } = await supabase
         .from('menu_categories')
@@ -510,7 +465,37 @@ export const saveRestaurantMenu = async (restaurant: RestaurantUI) => {
         }
       }
       
+      const { data: existingItems, error: getItemsError } = await supabase
+        .from('menu_items')
+        .select('id')
+        .eq('category_id', category.id);
+      
+      if (getItemsError) {
+        if (await handleRelationDoesNotExistError(getItemsError)) {
+        } else {
+          throw getItemsError;
+        }
+      }
+      
+      const newItemIds = category.items.map(i => i.id);
+      const itemsToDelete = existingItems
+        ?.filter(i => !newItemIds.includes(i.id))
+        .map(i => i.id) || [];
+      
+      if (itemsToDelete.length > 0) {
+        const { error: deleteItemsError } = await supabase
+          .from('menu_items')
+          .delete()
+          .in('id', itemsToDelete);
+        
+        if (deleteItemsError && deleteItemsError.code !== 'PGRST116') {
+          throw deleteItemsError;
+        }
+      }
+      
       for (let [itemIndex, item] of category.items.entries()) {
+        console.log(`Saving item ${item.id} with dietary_type: ${item.dietary_type}`);
+        
         const { error: itemError } = await supabase
           .from('menu_items')
           .upsert({
@@ -560,9 +545,7 @@ export const saveRestaurantMenu = async (restaurant: RestaurantUI) => {
           }
         }
 
-        // Process variants and addons
         if (item.variants && item.variants.length > 0) {
-          // Fetch current variants to compare
           const { data: existingVariants, error: getVariantsError } = await supabase
             .from('menu_item_variants')
             .select('id')
@@ -603,6 +586,15 @@ export const saveRestaurantMenu = async (restaurant: RestaurantUI) => {
             if (variantError && variantError.code !== 'PGRST116') {
               throw variantError;
             }
+          }
+        } else {
+          const { error: deleteAllVariantsError } = await supabase
+            .from('menu_item_variants')
+            .delete()
+            .eq('menu_item_id', item.id);
+          
+          if (deleteAllVariantsError && deleteAllVariantsError.code !== 'PGRST116') {
+            throw deleteAllVariantsError;
           }
         }
 
@@ -714,10 +706,20 @@ export const saveRestaurantMenu = async (restaurant: RestaurantUI) => {
               }
             }
           }
+        } else {
+          const { error: deleteAllMappingsError } = await supabase
+            .from('menu_item_addon_mapping')
+            .delete()
+            .eq('menu_item_id', item.id);
+          
+          if (deleteAllMappingsError && deleteAllMappingsError.code !== 'PGRST116') {
+            throw deleteAllMappingsError;
+          }
         }
       }
     }
     
+    toast.success("Menu saved successfully to database!");
     return { success: true, isLocalOnly: false };
   } catch (error) {
     console.error('Error saving restaurant menu:', error);
@@ -733,92 +735,6 @@ export const saveRestaurantMenu = async (restaurant: RestaurantUI) => {
       description: 'Please try again or check your connection.'
     });
     
-    throw error;
-  }
-};
-
-export const updateOrderSettings = async (restaurantId: string, ordersEnabled: boolean) => {
-  try {
-    const { error } = await supabase
-      .from('restaurants')
-      .update({
-        orders_enabled: ordersEnabled,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', restaurantId);
-
-    if (error) {
-      console.error('Error updating order settings:', error);
-      throw error;
-    }
-
-    // Invalidate cache for this restaurant
-    const cacheKey = `restaurant_${restaurantId}`;
-    removeFromCache(cacheKey);
-
-    return { success: true };
-  } catch (error) {
-    console.error('Error in updateOrderSettings:', error);
-    throw error;
-  }
-};
-
-export const updateMenuItemDietaryType = async (itemId: string, dietaryType: 'veg' | 'non-veg' | null, restaurantId: string) => {
-  try {
-    // Update the dietary type in a single database call
-    const { error } = await supabase
-      .from('menu_items')
-      .update({
-        dietary_type: dietaryType,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', itemId);
-
-    if (error) {
-      console.error('Error updating dietary type:', error);
-      throw error;
-    }
-
-    // Invalidate cache for this restaurant directly using the provided restaurantId
-    const cacheKey = `restaurant_${restaurantId}`;
-    removeFromCache(cacheKey);
-
-    return { success: true };
-  } catch (error) {
-    console.error('Error in updateMenuItemDietaryType:', error);
-    throw error;
-  }
-};
-
-export const updateMenuItemField = async (
-  itemId: string,
-  categoryId: string,
-  field: string,
-  value: string | boolean | null,
-  restaurantId: string
-) => {
-  try {
-    // Update only the specific field in a single database call
-    const { error } = await supabase
-      .from('menu_items')
-      .update({
-        [field]: value,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', itemId);
-
-    if (error) {
-      console.error('Error updating menu item field:', error);
-      throw error;
-    }
-
-    // Invalidate cache for this restaurant
-    const cacheKey = `restaurant_${restaurantId}`;
-    removeFromCache(cacheKey);
-
-    return { success: true };
-  } catch (error) {
-    console.error('Error in updateMenuItemField:', error);
     throw error;
   }
 };

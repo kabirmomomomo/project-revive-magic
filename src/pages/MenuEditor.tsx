@@ -10,17 +10,14 @@ import {
   saveRestaurantMenu,
   generateStableRestaurantId,
   uploadItemImage,
-  updateOrderSettings,
   RestaurantUI,
   MenuCategoryUI,
   MenuItemUI,
   MenuItemVariantUI,
   MenuItemAddonUI,
-  MenuAddonOptionUI,
-  updateMenuItemDietaryType,
-  updateMenuItemField
+  MenuAddonOptionUI
 } from "@/services/menuService";
-import { CategoryType } from "@/types/menu";
+import { CategoryType } from "@/types/menu"; // Add this import
 import { useIsMobile } from "@/hooks/use-mobile";
 import { lazy, Suspense } from 'react';
 import LoadingAnimation from '@/components/LoadingAnimation';
@@ -35,8 +32,6 @@ import {
 } from "@/components/ui/sheet";
 import debounce from "lodash/debounce";
 import { saveState, loadState, hasUnsavedChanges, markChangesAsSaved } from '@/lib/statePersistence';
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 
 // Lazy load components
 const RestaurantForm = lazy(() => import('@/components/menu/editor/RestaurantForm'));
@@ -53,14 +48,12 @@ const MenuEditor = () => {
     name: "My Restaurant",
     description: "Welcome to our restaurant",
     categories: [],
-    ordersEnabled: true, // Default to enabled
   });
   const [isLoading, setIsLoading] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
 
-  // Query to fetch restaurant data
   const { data: restaurantData, isLoading: isLoadingRestaurant } = useQuery({
     queryKey: ['restaurant', user?.id],
     queryFn: async () => {
@@ -72,11 +65,10 @@ const MenuEditor = () => {
     enabled: !!user,
   });
 
-  // Mutation to save restaurant data
   const saveMenuMutation = useMutation({
     mutationFn: saveRestaurantMenu,
     onSuccess: () => {
-      // toast.success("Changes saved successfully");
+      toast.success("Changes saved successfully");
     },
     onError: (error) => {
       toast.error("Failed to save changes. Please try again.");
@@ -88,39 +80,11 @@ const MenuEditor = () => {
 
   // Add debounced save function
   const debouncedSave = useCallback(
-    debounce((data: RestaurantUI) => {
+    debounce((data: typeof restaurant) => {
       saveMenuMutation.mutate(data);
     }, 1000),
     []
   );
-
-  // Handle orders toggle change - ensure it gets saved to the database immediately
-  const handleOrdersToggle = (enabled: boolean) => {
-    setRestaurant(prev => {
-      const newState = {
-        ...prev,
-        ordersEnabled: enabled
-      };
-      
-      return newState;
-    });
-    
-    // Use the new updateOrderSettings function for immediate feedback
-    updateOrderSettings(restaurant.id, enabled)
-      .then(() => {
-        toast.success(enabled ? "Orders enabled" : "Orders disabled");
-        markChangesAsSaved();
-      })
-      .catch((error) => {
-        toast.error("Failed to save orders setting. Please try again.");
-        console.error("Orders toggle error:", error);
-        // Revert the state if there's an error
-        setRestaurant(prev => ({
-          ...prev,
-          ordersEnabled: !enabled
-        }));
-      });
-  };
 
   // Add state recovery
   useEffect(() => {
@@ -152,7 +116,6 @@ const MenuEditor = () => {
           name: "My Restaurant",
           description: "Welcome to our restaurant",
           categories: [],
-          ordersEnabled: true, // Default to enabled
         };
         setRestaurant(newRestaurant);
       }
@@ -258,104 +221,6 @@ const MenuEditor = () => {
     toast.success("Menu item added");
   };
 
-  const handleSaveMenu = () => {
-    // Only save the active item if it exists
-    if (activeItem && activeCategoryId) {
-      const category = restaurant.categories.find(c => c.id === activeCategoryId);
-      if (category) {
-        const item = category.items.find(i => i.id === activeItem.id);
-        if (item) {
-          // Create a minimal restaurant object with only the active item and its category
-          const restaurantToSave = {
-            ...restaurant,
-            categories: restaurant.categories.map(cat =>
-              cat.id === activeCategoryId
-                ? {
-                    ...cat,
-                    items: cat.items.map(i =>
-                      i.id === activeItem.id ? item : i
-                    )
-                  }
-                : { ...cat, items: [] } // Empty items array for other categories
-            )
-          };
-          
-          saveMenuMutation.mutate(restaurantToSave, {
-            onSuccess: () => {
-              markChangesAsSaved();
-              // toast.success("Changes saved successfully");
-            },
-            onError: (error) => {
-              toast.error("Failed to save changes. Please try again.");
-              console.error("Save error:", error);
-            }
-          });
-          return;
-        }
-      }
-    }
-    
-    // If no active item, save the entire menu
-    saveMenuMutation.mutate(restaurant, {
-      onSuccess: () => {
-        markChangesAsSaved();
-        // toast.success("Changes saved successfully");
-      },
-      onError: (error) => {
-        toast.error("Failed to save changes. Please try again.");
-        console.error("Save error:", error);
-      }
-    });
-  };
-
-  const handleDietaryTypeChange = (value: string) => {
-    const newDietaryType = value === "none" ? null : value as 'veg' | 'non-veg';
-    console.log(`Changing dietary type from ${activeItem.dietary_type} to ${newDietaryType}`);
-    
-    // Update local state immediately for responsive UI
-    setRestaurant(prev => ({
-      ...prev,
-      categories: prev.categories.map(category =>
-        category.id === activeCategoryId
-          ? {
-              ...category,
-              items: category.items.map(item =>
-                item.id === activeItem.id
-                  ? { ...item, dietary_type: newDietaryType }
-                  : item
-              )
-            }
-          : category
-      )
-    }));
-    
-    // Use the dedicated function for immediate database update
-    updateMenuItemDietaryType(
-      activeItem.id,
-      newDietaryType,
-      restaurant.id
-    ).catch(error => {
-      console.error('Error updating dietary type:', error);
-      toast.error('Failed to update dietary type');
-      // Revert the state if there's an error
-      setRestaurant(prev => ({
-        ...prev,
-        categories: prev.categories.map(category =>
-          category.id === activeCategoryId
-            ? {
-                ...category,
-                items: category.items.map(item =>
-                  item.id === activeItem.id
-                    ? { ...item, dietary_type: activeItem.dietary_type }
-                    : item
-                )
-              }
-            : category
-        )
-      }));
-    });
-  };
-
   const updateMenuItem = (
     categoryId: string,
     itemId: string,
@@ -364,7 +229,6 @@ const MenuEditor = () => {
   ) => {
     console.log(`Updating menu item ${itemId}, field: ${field}, value: ${value}`);
     
-    // Update local state immediately
     setRestaurant(prev => {
       const newState = {
         ...prev,
@@ -380,30 +244,16 @@ const MenuEditor = () => {
         ),
       };
       
-      // Skip saving for dietary_type changes as they are handled separately
-      if (field !== "dietary_type") {
-        // Use the new updateMenuItemField function for efficient updates
-        updateMenuItemField(itemId, categoryId, field, value, restaurant.id)
-          .catch(error => {
-            console.error('Error updating menu item field:', error);
-            toast.error('Failed to update item');
-            // Revert the state if there's an error
-            setRestaurant(prev => ({
-              ...prev,
-              categories: prev.categories.map(category =>
-                category.id === categoryId
-                  ? {
-                      ...category,
-                      items: category.items.map(item =>
-                        item.id === itemId
-                          ? { ...item, [field]: prev.categories.find(c => c.id === categoryId)?.items.find(i => i.id === itemId)?.[field] }
-                          : item
-                      )
-                    }
-                  : category
-              )
-            }));
-          });
+      // Save changes immediately if dietary_type is changed
+      if (field === "dietary_type") {
+        console.log(`Updated dietary_type for item ${itemId} to ${value}`);
+        // Initiate save to database
+        setTimeout(() => {
+          saveMenuMutation.mutate(newState);
+        }, 100);
+      } else {
+        // For other fields, use the debounced save
+        debouncedSave(newState);
       }
       
       return newState;
@@ -805,6 +655,19 @@ const MenuEditor = () => {
     }
   };
 
+  const handleSaveMenu = () => {
+    saveMenuMutation.mutate(restaurant, {
+      onSuccess: () => {
+        markChangesAsSaved();
+        toast.success("Changes saved successfully");
+      },
+      onError: (error) => {
+        toast.error("Failed to save changes. Please try again.");
+        console.error("Save error:", error);
+      }
+    });
+  };
+
   const handleSaveRestaurantDetails = async (details: Partial<typeof restaurant>) => {
     setRestaurant({
       ...restaurant,
@@ -872,7 +735,6 @@ const MenuEditor = () => {
         handleSaveMenu={handleSaveMenu}
         setActiveItemId={setActiveItemId}
         isSaving={saveMenuMutation.isPending}
-        handleDietaryTypeChange={handleDietaryTypeChange}
       />
     );
   };
@@ -882,6 +744,7 @@ const MenuEditor = () => {
       <Suspense fallback={<LoadingAnimation />}>
         <EditorHeader 
           restaurant={restaurant}
+          handleSaveMenu={handleSaveMenu}
           handleSaveRestaurantDetails={handleSaveRestaurantDetails}
           signOut={signOut}
           isSaving={saveMenuMutation.isPending}
@@ -893,32 +756,6 @@ const MenuEditor = () => {
           <Suspense fallback={<LoadingAnimation />}>
             <RestaurantForm restaurant={restaurant} setRestaurant={setRestaurant} />
           </Suspense>
-
-          {/* Orders Toggle Switch - Updated with better feedback */}
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <h3 className="text-lg font-medium">Orders Settings</h3>
-                <p className="text-sm text-gray-500">
-                  {/* Toggle ordering functionality in your menu preview */}
-                </p>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Label htmlFor="orders-enabled" className="text-sm font-medium">
-                  {restaurant.ordersEnabled ? "Enabled" : "Disabled"}
-                </Label>
-                <Switch
-                  id="orders-enabled"
-                  checked={restaurant.ordersEnabled === true}
-                  onCheckedChange={handleOrdersToggle}
-                  disabled={saveMenuMutation.isPending}
-                />
-              </div>
-            </div>
-            {saveMenuMutation.isPending && (
-              <p className="text-xs text-muted-foreground mt-2">Saving changes...</p>
-            )}
-          </div>
 
           <Separator className="my-4" />
 

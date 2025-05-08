@@ -126,15 +126,12 @@ const MenuItem: React.FC<MenuItemProps> = React.memo(({ item, index, ordersEnabl
               isMobile ? "items-center" : ""
             )}>
               {item.old_price && parseFloat(item.old_price) > 0 && (
-                <span className="text-[10px] font-medium line-through text-gray-400">
+                <span className="text-sm line-through text-gray-500">
                   ₹{parseFloat(item.old_price).toFixed(2)}
                 </span>
               )}
               {(!item.variants || item.variants.length === 0) && (
-                <span className={cn(
-                  "font-bold bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-2 py-0.5 rounded-full shadow-sm tabular-nums",
-                  isMobile ? "text-xs min-w-[48px] text-center px-2" : "text-base px-2"
-                )}>
+                <span className="text-lg font-bold text-purple-900">
                   ₹{parseFloat(effectivePrice).toFixed(2)}
                 </span>
               )}

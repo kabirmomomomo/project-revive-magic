@@ -156,11 +156,11 @@ const Cart: React.FC<CartProps> = ({ tableId, sessionId, sessionCode, isSessionO
               <div className="border-t border-purple-100 py-4 mt-auto bg-white bg-opacity-70 backdrop-blur-sm rounded-t-xl">
                 <div className="flex justify-between py-2 text-sm">
                   <span className="text-purple-700">Subtotal</span>
-                  <span className="text-purple-900 font-medium">${getCartTotal().toFixed(2)}</span>
+                  <span className="text-purple-900 font-medium">₹{getCartTotal().toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between py-2 font-bold">
                   <span className="text-purple-900">Total</span>
-                  <span className="text-purple-900">${getCartTotal().toFixed(2)}</span>
+                  <span className="text-purple-900">₹{getCartTotal().toFixed(2)}</span>
                 </div>
                 <div className="mt-4 space-y-2">
                   <Button 
