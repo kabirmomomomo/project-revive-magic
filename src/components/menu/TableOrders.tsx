@@ -196,7 +196,7 @@ const TableOrders = () => {
                   
                   <div className="pt-3 flex justify-between font-medium border-t border-purple-100 mt-2">
                     <span>{isSessionCode ? 'Session Total' : `Table ${tableId} Total`}</span>
-                    <span className="text-purple-900">${sessionTotal.toFixed(2)}</span>
+                    <span className="text-purple-900">₹{sessionTotal.toFixed(2)}</span>
                   </div>
                 </div>
               );
@@ -206,7 +206,7 @@ const TableOrders = () => {
             <div className="pt-4 flex justify-between font-medium text-lg border-t border-purple-100">
               <span>Grand Total</span>
               <span className="text-purple-900">
-                ${calculateTotal(displayOrders).toFixed(2)}
+                ₹{calculateTotal(displayOrders).toFixed(2)}
               </span>
             </div>
           </div>
