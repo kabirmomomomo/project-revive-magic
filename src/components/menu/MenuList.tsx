@@ -1,4 +1,3 @@
-
 import React from "react";
 import MenuCategory from "./MenuCategory";
 import { CategoryType, MenuCategory as MenuCategoryType } from "@/types/menu";
@@ -37,21 +36,32 @@ const MenuList: React.FC<MenuListProps> = ({
       // Then filter items by search query and visibility
       const filteredItems = category.items
         .filter(item => item.is_visible !== false) // Only show visible items
-        .filter(item => !searchQuery || 
-          item.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-          item.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          // Also search in variants
-          item.variants?.some(variant => 
-            variant.name.toLowerCase().includes(searchQuery.toLowerCase())
-          ) ||
-          // Also search in addons
-          item.addons?.some(addon => 
-            addon.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            addon.options.some(option => 
-              option.name.toLowerCase().includes(searchQuery.toLowerCase())
+        .filter(item => {
+          if (!searchQuery) return true;
+          
+          const searchLower = searchQuery.toLowerCase();
+          
+          // Check item name
+          if (item.name?.toLowerCase().includes(searchLower)) return true;
+          
+          // Check item description
+          if (item.description?.toLowerCase().includes(searchLower)) return true;
+          
+          // Check variants
+          if (item.variants?.some(variant => 
+            variant.name?.toLowerCase().includes(searchLower)
+          )) return true;
+          
+          // Check addons
+          if (item.addons?.some(addon => 
+            addon.title?.toLowerCase().includes(searchLower) ||
+            addon.options?.some(option => 
+              option.name?.toLowerCase().includes(searchLower)
             )
-          )
-        );
+          )) return true;
+          
+          return false;
+        });
       
       // Return category with filtered items
       return {
