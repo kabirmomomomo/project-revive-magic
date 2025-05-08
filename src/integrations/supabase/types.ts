@@ -17,6 +17,8 @@ export type Database = {
           is_active: boolean | null
           restaurant_id: string
           table_id: string | null
+          device_id: string | null
+          expires_at: string | null
         }
         Insert: {
           code: string
@@ -25,6 +27,8 @@ export type Database = {
           is_active?: boolean | null
           restaurant_id: string
           table_id?: string | null
+          device_id?: string | null
+          expires_at?: string | null
         }
         Update: {
           code?: string
@@ -33,6 +37,8 @@ export type Database = {
           is_active?: boolean | null
           restaurant_id?: string
           table_id?: string | null
+          device_id?: string | null
+          expires_at?: string | null
         }
         Relationships: []
       }

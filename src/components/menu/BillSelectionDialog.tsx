@@ -31,15 +31,54 @@ const BillSelectionDialog: React.FC<BillSelectionDialogProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  // Clear any existing session when dialog opens
+  // Check for existing valid session when dialog opens
   useEffect(() => {
-    if (open) {
-      localStorage.removeItem("billSessionId");
-      localStorage.removeItem("billSessionCode");
-      localStorage.removeItem("billSessionOwner");
-      localStorage.removeItem("billSessionExpiresAt");
-    }
-  }, [open]);
+    const checkExistingSession = async () => {
+      if (!open) return;
+
+      try {
+        // Get device ID from localStorage or generate a new one
+        let deviceId = localStorage.getItem("deviceId");
+        if (!deviceId) {
+          deviceId = crypto.randomUUID();
+          localStorage.setItem("deviceId", deviceId);
+        }
+
+        // Check for existing active session for this device
+        const { data: existingSession, error } = await supabase
+          .from("bill_sessions")
+          .select("*")
+          .eq("restaurant_id", restaurantId)
+          .eq("table_id", tableId)
+          .eq("device_id", deviceId)
+          .eq("is_active", true)
+          .gt("expires_at", new Date().toISOString())
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .single();
+
+        if (error && error.code !== "PGRST116") { // PGRST116 is "no rows returned"
+          throw error;
+        }
+
+        if (existingSession) {
+          // Store session info in localStorage
+          localStorage.setItem("billSessionId", existingSession.id);
+          localStorage.setItem("billSessionCode", existingSession.code);
+          localStorage.setItem("billSessionOwner", "true");
+          localStorage.setItem("billSessionExpiresAt", existingSession.expires_at);
+
+          // Close dialog and navigate to the menu with the existing session code
+          onOpenChange(false);
+          navigate(`/menu-preview/${restaurantId}?table=${tableId}&sessionCode=${existingSession.code}`);
+        }
+      } catch (error) {
+        console.error("Error checking existing session:", error);
+      }
+    };
+
+    checkExistingSession();
+  }, [open, restaurantId, tableId, navigate, onOpenChange]);
 
   const generateUniqueSessionCode = async () => {
     // Generate a random 6-character code
@@ -72,15 +111,26 @@ const BillSelectionDialog: React.FC<BillSelectionDialogProps> = ({
   const handleCreateNewBill = async () => {
     setIsLoading(true);
     try {
-      // Clear any existing session data when starting new bill
-      localStorage.removeItem("billSessionId");
-      localStorage.removeItem("billSessionCode");
-      localStorage.removeItem("billSessionOwner");
-      localStorage.removeItem("billSessionExpiresAt");
+      // Get device ID from localStorage or generate a new one
+      let deviceId = localStorage.getItem("deviceId");
+      if (!deviceId) {
+        deviceId = crypto.randomUUID();
+        localStorage.setItem("deviceId", deviceId);
+      }
 
       // Generate a unique session code
       const code = await generateUniqueSessionCode();
       
+      console.log('Creating new bill session with:', {
+        restaurant_id: restaurantId,
+        table_id: tableId,
+        code,
+        device_id: deviceId,
+        is_active: true,
+        created_at: new Date().toISOString(),
+        expires_at: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString()
+      });
+
       // Create a new bill session with expiration
       const { data, error } = await supabase
         .from("bill_sessions")
@@ -88,6 +138,7 @@ const BillSelectionDialog: React.FC<BillSelectionDialogProps> = ({
           restaurant_id: restaurantId,
           table_id: tableId,
           code: code,
+          device_id: deviceId,
           is_active: true,
           created_at: new Date().toISOString(),
           expires_at: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString() // 6 hours from now
@@ -95,7 +146,12 @@ const BillSelectionDialog: React.FC<BillSelectionDialogProps> = ({
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error creating bill session:', error);
+        throw error;
+      }
+
+      console.log('Bill session created successfully:', data);
 
       // Store session info in localStorage
       localStorage.setItem("billSessionId", data.id);
@@ -122,6 +178,13 @@ const BillSelectionDialog: React.FC<BillSelectionDialogProps> = ({
 
     setIsLoading(true);
     try {
+      // Get device ID from localStorage or generate a new one
+      let deviceId = localStorage.getItem("deviceId");
+      if (!deviceId) {
+        deviceId = crypto.randomUUID();
+        localStorage.setItem("deviceId", deviceId);
+      }
+
       // Look up the session code and check if it's not expired
       const { data, error } = await supabase
         .from("bill_sessions")
@@ -193,7 +256,7 @@ const BillSelectionDialog: React.FC<BillSelectionDialogProps> = ({
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div>
               <Label htmlFor="session-code">Join Friend's Bill</Label>
               <div className="flex gap-2">
                 <Input

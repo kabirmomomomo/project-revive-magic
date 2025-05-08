@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS bill_sessions (
   code TEXT NOT NULL,
   restaurant_id UUID NOT NULL,
   table_id TEXT,
+  device_id TEXT,
   is_active BOOLEAN DEFAULT true,
   created_at TIMESTAMPTZ DEFAULT now(),
   expires_at TIMESTAMPTZ DEFAULT (now() + interval '6 hours')
@@ -14,6 +15,9 @@ CREATE INDEX IF NOT EXISTS bill_sessions_code_idx ON bill_sessions(code);
 
 -- Create index on restaurant_id for faster lookups
 CREATE INDEX IF NOT EXISTS bill_sessions_restaurant_id_idx ON bill_sessions(restaurant_id);
+
+-- Create index on device_id for faster lookups
+CREATE INDEX IF NOT EXISTS bill_sessions_device_id_idx ON bill_sessions(device_id);
 
 -- Create index on expires_at for faster cleanup
 CREATE INDEX IF NOT EXISTS bill_sessions_expires_at_idx ON bill_sessions(expires_at);
