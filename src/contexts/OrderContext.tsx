@@ -23,6 +23,7 @@ interface Order {
   restaurant_id: string;
   table_id?: string;
   device_id: string;
+  user_name?: string;
   items: OrderItem[];
   session_id?: string;
   session_code?: string;
@@ -349,12 +350,24 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
       
       // Prepare order data
-      const orderData = {
+      const cartTotal = getCartTotal();
+      const orderData: {
+        restaurant_id: string;
+        device_id: string;
+        total_amount: number;
+        status: string;
+        user_name?: string;
+        table_id?: string;
+        session_id?: string;
+        session_code?: string;
+        is_split_bill?: boolean;
+      } = {
         restaurant_id: restaurantId,
-        total_amount: getCartTotal(),
+        device_id: deviceId,
+        total_amount: cartTotal,
         status: 'placed',
-        device_id: deviceId
-      } as any;
+        user_name: localStorage.getItem("userName") || undefined
+      };
       
       // Only add table_id if it exists
       if (finalTableId) {
@@ -371,6 +384,12 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
       
       console.log('Order data to insert:', orderData);
+      console.log('Cart total:', cartTotal);
+      console.log('Device ID:', deviceId);
+      console.log('Restaurant ID:', restaurantId);
+      console.log('Session ID:', sessionId);
+      console.log('Session Code:', sessionCode);
+      console.log('Table ID:', finalTableId);
       
       const { data: order, error: orderError } = await supabase
         .from('orders')
@@ -380,6 +399,12 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       if (orderError) {
         console.error('Error inserting order:', orderError);
+        console.error('Error details:', {
+          message: orderError.message,
+          details: orderError.details,
+          hint: orderError.hint,
+          code: orderError.code
+        });
         throw orderError;
       }
 

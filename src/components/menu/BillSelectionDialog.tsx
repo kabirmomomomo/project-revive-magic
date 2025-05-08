@@ -29,6 +29,8 @@ const BillSelectionDialog: React.FC<BillSelectionDialogProps> = ({
 }) => {
   const [sessionCode, setSessionCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [userName, setUserName] = useState("");
+  const [showNameInput, setShowNameInput] = useState(true);
   const navigate = useNavigate();
 
   // Check for existing valid session when dialog opens
@@ -67,6 +69,7 @@ const BillSelectionDialog: React.FC<BillSelectionDialogProps> = ({
           localStorage.setItem("billSessionCode", existingSession.code);
           localStorage.setItem("billSessionOwner", "true");
           localStorage.setItem("billSessionExpiresAt", existingSession.expires_at);
+          localStorage.setItem("userName", existingSession.user_name);
 
           // Close dialog and navigate to the menu with the existing session code
           onOpenChange(false);
@@ -109,6 +112,11 @@ const BillSelectionDialog: React.FC<BillSelectionDialogProps> = ({
   };
 
   const handleCreateNewBill = async () => {
+    if (!userName.trim()) {
+      toast.error("Please enter your name");
+      return;
+    }
+
     setIsLoading(true);
     try {
       // Get device ID from localStorage or generate a new one
@@ -126,6 +134,7 @@ const BillSelectionDialog: React.FC<BillSelectionDialogProps> = ({
         table_id: tableId,
         code,
         device_id: deviceId,
+        user_name: userName,
         is_active: true,
         created_at: new Date().toISOString(),
         expires_at: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString()
@@ -139,6 +148,7 @@ const BillSelectionDialog: React.FC<BillSelectionDialogProps> = ({
           table_id: tableId,
           code: code,
           device_id: deviceId,
+          user_name: userName,
           is_active: true,
           created_at: new Date().toISOString(),
           expires_at: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString() // 6 hours from now
@@ -158,6 +168,7 @@ const BillSelectionDialog: React.FC<BillSelectionDialogProps> = ({
       localStorage.setItem("billSessionCode", data.code);
       localStorage.setItem("billSessionOwner", "true");
       localStorage.setItem("billSessionExpiresAt", data.expires_at);
+      localStorage.setItem("userName", userName);
 
       // Close dialog and navigate to the menu with the new session code
       onOpenChange(false);
@@ -171,6 +182,11 @@ const BillSelectionDialog: React.FC<BillSelectionDialogProps> = ({
   };
 
   const handleJoinBill = async () => {
+    if (!userName.trim()) {
+      toast.error("Please enter your name");
+      return;
+    }
+
     if (!sessionCode.trim()) {
       toast.error("Please enter a session code");
       return;
@@ -206,6 +222,7 @@ const BillSelectionDialog: React.FC<BillSelectionDialogProps> = ({
       localStorage.setItem("billSessionCode", data.code);
       localStorage.setItem("billSessionOwner", "false");
       localStorage.setItem("billSessionExpiresAt", data.expires_at);
+      localStorage.setItem("userName", userName);
 
       // Close dialog and navigate to the menu with the session code
       onOpenChange(false);
@@ -226,59 +243,80 @@ const BillSelectionDialog: React.FC<BillSelectionDialogProps> = ({
             Welcome to Table {tableId}
           </DialogTitle>
           <DialogDescription className="text-center text-base">
-            Please select how you would like to proceed
+            Please enter your name to continue
           </DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4 py-4">
-          <div className="grid gap-2">
-            <Button
-              variant="outline"
-              className="h-24 flex flex-col items-center justify-center gap-2 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200"
-              onClick={handleCreateNewBill}
-              disabled={isLoading}
-            >
-              <PlusCircle className="h-8 w-8" />
-              <span className="text-lg font-medium">Start New Bill</span>
-              <span className="text-sm text-muted-foreground">
-                Create a new bill and invite friends
-              </span>
-            </Button>
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
-                  Or
+          {showNameInput ? (
+            <div className="grid gap-2">
+              <Label htmlFor="user-name">Your Name</Label>
+              <Input
+                id="user-name"
+                placeholder="Enter your name"
+                value={userName}
+                onChange={(e) => setUserName(e.target.value)}
+                className="text-center"
+                disabled={isLoading}
+              />
+              <Button
+                onClick={() => setShowNameInput(false)}
+                disabled={!userName.trim() || isLoading}
+                className="mt-2"
+              >
+                Continue
+              </Button>
+            </div>
+          ) : (
+            <div className="grid gap-2">
+              <Button
+                variant="outline"
+                className="h-24 flex flex-col items-center justify-center gap-2 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200"
+                onClick={handleCreateNewBill}
+                disabled={isLoading}
+              >
+                <PlusCircle className="h-8 w-8" />
+                <span className="text-lg font-medium">Start New Bill</span>
+                <span className="text-sm text-muted-foreground">
+                  Create a new bill and invite friends
                 </span>
-              </div>
-            </div>
+              </Button>
 
-            <div>
-              <Label htmlFor="session-code">Join Friend's Bill</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="session-code"
-                  placeholder="Enter 6-digit code"
-                  value={sessionCode}
-                  onChange={(e) => setSessionCode(e.target.value.toUpperCase())}
-                  maxLength={6}
-                  className="text-center tracking-widest font-mono"
-                  disabled={isLoading}
-                />
-                <Button
-                  onClick={handleJoinBill}
-                  disabled={isLoading}
-                  className="whitespace-nowrap"
-                >
-                  <Users className="h-4 w-4 mr-2" />
-                  Join
-                </Button>
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">
+                    Or
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="session-code">Join Friend's Bill</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="session-code"
+                    placeholder="Enter 6-digit code"
+                    value={sessionCode}
+                    onChange={(e) => setSessionCode(e.target.value.toUpperCase())}
+                    maxLength={6}
+                    className="text-center tracking-widest font-mono"
+                    disabled={isLoading}
+                  />
+                  <Button
+                    onClick={handleJoinBill}
+                    disabled={isLoading}
+                    className="whitespace-nowrap"
+                  >
+                    <Users className="h-4 w-4 mr-2" />
+                    Join
+                  </Button>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>

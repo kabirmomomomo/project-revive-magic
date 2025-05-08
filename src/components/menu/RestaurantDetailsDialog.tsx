@@ -22,6 +22,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { RestaurantUI } from "@/services/menuService";
+import { Switch } from "@/components/ui/switch";
 
 interface RestaurantDetailsDialogProps {
   restaurant: RestaurantUI;
@@ -134,6 +135,14 @@ const FormContent: React.FC<{
             placeholder="10:00 PM"
             onFocus={handleFocus}
           />
+        </div>
+        <div className="col-span-2 flex items-center space-x-2">
+          <Switch
+            id="orders_enabled"
+            checked={formData.ordersEnabled !== false}
+            onCheckedChange={(checked) => setFormData(prev => ({ ...prev, ordersEnabled: checked }))}
+          />
+          <Label htmlFor="orders_enabled">Enable Orders</Label>
         </div>
       </div>
       <div className="flex justify-end gap-3 sticky bottom-0 bg-background py-4 border-t">

@@ -22,6 +22,7 @@ export const setupDatabase = async () => {
             name TEXT NOT NULL,
             description TEXT,
             user_id UUID,
+            orders_enabled BOOLEAN DEFAULT true,
             created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()),
             updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
           `
@@ -167,7 +168,8 @@ export const setupDatabase = async () => {
           status TEXT NOT NULL DEFAULT 'placed',
           created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()),
           updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()),
-          user_id UUID
+          user_id UUID,
+          user_name TEXT
         `
       }
     );

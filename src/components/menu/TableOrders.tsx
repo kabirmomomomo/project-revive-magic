@@ -170,7 +170,11 @@ const TableOrders = () => {
                       <div className="flex justify-between mb-1">
                         <div className="text-sm font-medium text-purple-900 flex items-center gap-1">
                           <Smartphone className="h-3 w-3" />
-                          {order.device_id.substring(0, 6)}...
+                          {order.user_name ? (
+                            <span className="font-semibold">{order.user_name}</span>
+                          ) : (
+                            <span className="text-gray-500">Guest ({order.device_id.substring(0, 6)}...)</span>
+                          )}
                         </div>
                         <div className="text-xs text-muted-foreground">
                           {format(new Date(order.created_at), 'h:mm a')}

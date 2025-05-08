@@ -26,6 +26,7 @@
     restaurant_id: string;
     table_id?: string;
     device_id: string;
+    user_name?: string;
     created_at: string;
     status: string;
     total_amount: number;
@@ -371,6 +372,7 @@
                           <TableRow className="bg-purple-50">
                             <TableHead className="text-xs">Order ID</TableHead>
                             <TableHead className="text-xs">Time</TableHead>
+                            <TableHead className="text-xs">Name</TableHead>
                             <TableHead className="text-xs">Table</TableHead>
                             <TableHead className="text-xs">Items</TableHead>
                             <TableHead className="text-xs">Total</TableHead>
@@ -390,6 +392,12 @@
                               <TableRow key={order.id} className="hover:bg-purple-50/50">
                                 <TableCell className="text-xs">{order.id.slice(0, 8)}</TableCell>
                                 <TableCell className="text-xs">{format(new Date(order.created_at), 'MMM d, h:mm a')}</TableCell>
+                                <TableCell className="text-xs">
+                                  <div className="flex items-center">
+                                    <User className="h-3 w-3 mr-1 text-purple-600" />
+                                    {order.user_name || 'Guest'}
+                                  </div>
+                                </TableCell>
                                 <TableCell className="text-xs">
                                   {order.table_id ? (
                                     <div className="flex items-center">
@@ -527,8 +535,8 @@
                               <div key={order.id} className="border border-gray-100 rounded-lg p-3">
                                 <div className="flex justify-between items-center mb-2">
                                   <div className="flex items-center space-x-1">
-                                    <Smartphone className="h-4 w-4 text-gray-400" />
-                                    <span className="text-xs text-gray-500">{order.device_id.substring(0, 6)}...</span>
+                                    <User className="h-4 w-4 text-purple-600" />
+                                    <span className="text-xs text-gray-500">{order.user_name || 'Guest'}</span>
                                   </div>
                                   <Badge 
                                     className={
@@ -646,6 +654,10 @@
                                       {format(new Date(order.created_at), 'MMM d, h:mm a')}
                                     </div>
                                     <div className="font-medium flex items-center text-sm">
+                                      <User className="h-3 w-3 mr-1 text-purple-600" />
+                                      {order.user_name || 'Guest'}
+                                    </div>
+                                    <div className="font-medium flex items-center text-sm mt-1">
                                       {order.table_id ? (
                                         <div className="flex items-center">
                                           <TableIcon className="h-3 w-3 mr-1 text-purple-600" />

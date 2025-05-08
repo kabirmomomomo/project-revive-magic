@@ -48,6 +48,7 @@ const MenuEditor = () => {
     name: "My Restaurant",
     description: "Welcome to our restaurant",
     categories: [],
+    ordersEnabled: true,
   });
   const [isLoading, setIsLoading] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -116,6 +117,7 @@ const MenuEditor = () => {
           name: "My Restaurant",
           description: "Welcome to our restaurant",
           categories: [],
+          ordersEnabled: true,
         };
         setRestaurant(newRestaurant);
       }
