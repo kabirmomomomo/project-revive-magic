@@ -14,7 +14,7 @@ const SessionCodeDisplay: React.FC = () => {
         className="bg-purple-50 text-purple-700 border-purple-200 px-3 py-1.5 text-sm font-medium shadow-sm"
       >
         <Users className="h-4 w-4 mr-1.5" />
-        Phone: {sessionCode}
+        Phone No/OTP: {sessionCode}
       </Badge>
     </div>
   );

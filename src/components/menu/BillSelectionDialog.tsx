@@ -9,11 +9,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Users, PlusCircle } from "lucide-react";
+import { Users, PlusCircle, ArrowLeft, Phone, User, QrCode, ChevronRight } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useOrders } from '@/contexts/OrderContext';
+import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 interface BillSelectionDialogProps {
   open: boolean;
@@ -253,121 +255,164 @@ const BillSelectionDialog: React.FC<BillSelectionDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={() => {}}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-center">
+      <DialogContent className="sm:max-w-[425px] bg-gradient-to-b from-white to-purple-50 border-purple-100 shadow-xl">
+        <DialogHeader className="space-y-3">
+          <DialogTitle className="text-2xl font-bold text-center bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
             Welcome to Table {tableId}
           </DialogTitle>
-          <DialogDescription className="text-center text-base">
-            Please enter your name to continue
+          <DialogDescription className="text-center text-base text-blue-600">
+            {/* Enter your name and number to continue */}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-4 py-4">
-          {step === 1 && (
-            <div className="grid gap-2">
-              <Label htmlFor="user-name">Your Name</Label>
-              <Input
-                id="user-name"
-                placeholder="Enter your name"
-                value={userNameInput}
-                onChange={(e) => { setUserNameInput(e.target.value); setUserName(e.target.value); }}
-                className="text-center"
-                disabled={isLoading}
-              />
-              <Label htmlFor="phone-number">Phone Number</Label>
-              <Input
-                id="phone-number"
-                placeholder="Enter your phone number"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ""))}
-                maxLength={10}
-                disabled={isLoading}
-              />
-              <Button
-                onClick={() => setStep(2)}
-                disabled={!userNameInput.trim() || !/^\d{10}$/.test(phoneNumber) || isLoading}
-                className="mt-2"
+        <div className="grid gap-6 py-4">
+          <AnimatePresence mode="wait">
+            {step === 1 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.2 }}
+                className="grid gap-4"
               >
-                Continue
-              </Button>
-            </div>
-          )}
-
-          {step === 2 && !joining && (
-            <>
-              <Button
-                variant="outline"
-                className="h-24 flex flex-col items-center justify-center gap-2 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200"
-                onClick={handleCreateNewBill}
-                disabled={isLoading}
-              >
-                <PlusCircle className="h-8 w-8" />
-                <span className="text-lg font-medium">Start New Bill</span>
-                <span className="text-sm text-muted-foreground">
-                  Create a new bill and invite friends
-                </span>
-              </Button>
-
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
+                <div className="space-y-2">
+                  <Label htmlFor="user-name" className="text-blue-700 font-medium flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    Your Name
+                  </Label>
+                  <Input
+                    id="user-name"
+                    placeholder="Enter your name"
+                    value={userNameInput}
+                    onChange={(e) => { setUserNameInput(e.target.value); setUserName(e.target.value); }}
+                    className="text-center border-blue-200 focus:border-blue-400 focus:ring-blue-400/20 transition-all"
+                    disabled={isLoading}
+                  />
                 </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">
-                    Or
-                  </span>
+                <div className="space-y-2">
+                  <Label htmlFor="phone-number" className="text-blue-700 font-medium flex items-center gap-2">
+                    <Phone className="h-4 w-4" />
+                    Phone Number
+                  </Label>
+                  <Input
+                    id="phone-number"
+                    placeholder="Enter your phone number"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ""))}
+                    maxLength={10}
+                    className="text-center border-blue-200 focus:border-blue-400 focus:ring-blue-400/20 transition-all"
+                    disabled={isLoading}
+                  />
                 </div>
-              </div>
+                <Button
+                  onClick={() => setStep(2)}
+                  disabled={!userNameInput.trim() || !/^\d{10}$/.test(phoneNumber) || isLoading}
+                  className="mt-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+                >
+                  Continue
+                  <ChevronRight className="ml-2 h-4 w-4" />
+                </Button>
+              </motion.div>
+            )}
 
-              <Button
-                onClick={() => setJoining(true)}
-                disabled={isLoading}
-                className="whitespace-nowrap"
+            {step === 2 && !joining && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.2 }}
+                className="space-y-4"
               >
-                <Users className="h-4 w-4 mr-2" />
-                Join
-              </Button>
-              <Button
-                variant="ghost"
-                onClick={() => setStep(1)}
-                disabled={isLoading}
-                className="text-xs mt-1"
-              >
-                Back
-              </Button>
-            </>
-          )}
+                <div className="space-y-2">
+                  <p className="text-sm text-blue-600 font-medium">Start a new bill to begin ordering and invite friends</p>
+                  <Button
+                    variant="outline"
+                    className="w-full h-12 flex items-center justify-center gap-2 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 transition-all duration-200 group"
+                    onClick={handleCreateNewBill}
+                    disabled={isLoading}
+                  >
+                    <PlusCircle className="h-5 w-5 text-blue-600 group-hover:scale-110 transition-transform" />
+                    <span className="text-base font-medium">Start New Bill</span>
+                  </Button>
+                </div>
 
-          {step === 2 && joining && (
-            <div className="grid gap-2">
-              <Label htmlFor="join-phone-number">Friend's Phone Number</Label>
-              <Input
-                id="join-phone-number"
-                placeholder="Enter friend's phone number"
-                value={joinPhoneNumber}
-                onChange={e => setJoinPhoneNumber(e.target.value.replace(/\D/g, ""))}
-                maxLength={10}
-                disabled={isLoading}
-              />
-              <Button
-                onClick={handleJoinBill}
-                disabled={isLoading || !userNameInput.trim() || !/^\d{10}$/.test(joinPhoneNumber)}
-                className="whitespace-nowrap"
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-blue-200" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-blue-500">
+                      Or
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-sm text-blue-600 font-medium">Join your friend's bill to order together</p>
+                  <Button
+                    onClick={() => setJoining(true)}
+                    disabled={isLoading}
+                    className="w-full h-12 bg-blue-100 text-blue-700 hover:bg-blue-200 hover:text-blue-800 transition-all duration-200"
+                  >
+                    <Users className="h-5 w-5 mr-2" />
+                    Join Friends Bill
+                  </Button>
+                </div>
+                <Button
+                  variant="ghost"
+                  onClick={() => setStep(1)}
+                  disabled={isLoading}
+                  className="text-xs mt-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 transition-all duration-200"
+                >
+                  <ArrowLeft className="h-3 w-3 mr-1" />
+                  Back
+                </Button>
+              </motion.div>
+            )}
+
+            {step === 2 && joining && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.2 }}
+                className="space-y-4"
               >
-                <Users className="h-4 w-4 mr-2" />
-                Join Bill
-              </Button>
-              <Button
-                variant="ghost"
-                onClick={() => setJoining(false)}
-                disabled={isLoading}
-                className="text-xs mt-1"
-              >
-                Back
-              </Button>
-            </div>
-          )}
+                <div className="space-y-2">
+                  <Label htmlFor="join-phone-number" className="text-blue-700 font-medium flex items-center gap-2">
+                    <Phone className="h-4 w-4" />
+                    Friend's Phone Number
+                  </Label>
+                  <Input
+                    id="join-phone-number"
+                    placeholder="Enter friend's phone number"
+                    value={joinPhoneNumber}
+                    onChange={e => setJoinPhoneNumber(e.target.value.replace(/\D/g, ""))}
+                    maxLength={10}
+                    className="text-center border-blue-200 focus:border-blue-400 focus:ring-blue-400/20 transition-all"
+                    disabled={isLoading}
+                  />
+                </div>
+                <Button
+                  onClick={handleJoinBill}
+                  disabled={isLoading || !userNameInput.trim() || !/^\d{10}$/.test(joinPhoneNumber)}
+                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+                >
+                  <Users className="h-4 w-4 mr-2" />
+                  Join Bill
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => setJoining(false)}
+                  disabled={isLoading}
+                  className="text-xs mt-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 transition-all duration-200"
+                >
+                  <ArrowLeft className="h-3 w-3 mr-1" />
+                  Back
+                </Button>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </DialogContent>
     </Dialog>

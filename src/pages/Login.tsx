@@ -198,13 +198,13 @@ const Login = () => {
                   )}
                 </Button>
 
-                <button
+                {/* <button
                   type="button"
                   onClick={() => setShowResetPassword(true)}
                   className="w-full text-sm text-blue-600 hover:underline"
                 >
                   Forgot password?
-                </button>
+                </button> */}
               </form>
             </Form>
             
