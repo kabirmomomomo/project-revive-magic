@@ -125,39 +125,7 @@ const BillSelectionDialog: React.FC<BillSelectionDialogProps> = ({
       toast.error("Please enter a valid 10-digit phone number");
       return;
     }
-    // If friendPhoneNumber is filled, try to join that session instead
-    if (joinPhoneNumber && /^\d{10}$/.test(joinPhoneNumber)) {
-      setIsLoading(true);
-      try {
-        let deviceId = localStorage.getItem("deviceId");
-        if (!deviceId) {
-          deviceId = crypto.randomUUID();
-          localStorage.setItem("deviceId", deviceId);
-        }
-        const code = joinPhoneNumber;
-        // Check if a session with this phone number exists and is active
-        const { data, error } = await supabase
-          .from("bill_sessions")
-          .select("*")
-          .eq("code", code)
-          .eq("is_active", true)
-          .gt("expires_at", new Date().toISOString())
-          .single();
-        if (error || !data) {
-          toast.error("No active session found for this phone number");
-          setIsLoading(false);
-          return;
-        }
-        onOpenChange(false);
-        navigate(`/menu-preview/${restaurantId}?table=${tableId}&sessionCode=${code}&userName=${encodeURIComponent(userNameInput)}`);
-        return;
-      } catch (error) {
-        toast.error("Failed to join friend's bill. Please try again.");
-        setIsLoading(false);
-        return;
-      }
-    }
-    // Otherwise, proceed with normal new bill creation
+
     setIsLoading(true);
     try {
       let deviceId = localStorage.getItem("deviceId");
@@ -166,6 +134,7 @@ const BillSelectionDialog: React.FC<BillSelectionDialogProps> = ({
         localStorage.setItem("deviceId", deviceId);
       }
       const code = phoneNumber;
+
       // Check if a session with this phone number already exists and is active
       const { data: existingSession, error: existingError } = await supabase
         .from("bill_sessions")
@@ -174,6 +143,12 @@ const BillSelectionDialog: React.FC<BillSelectionDialogProps> = ({
         .eq("is_active", true)
         .gt("expires_at", new Date().toISOString())
         .single();
+
+      if (existingError && existingError.code !== "PGRST116") {
+        console.error("Error checking existing session:", existingError);
+        throw existingError;
+      }
+
       let sessionData = existingSession;
       if (!existingSession) {
         // Create a new bill session with phone number as code
@@ -184,25 +159,28 @@ const BillSelectionDialog: React.FC<BillSelectionDialogProps> = ({
             table_id: tableId,
             code: code,
             device_id: deviceId,
-            user_name: userNameInput,
             is_active: true,
             created_at: new Date().toISOString(),
             expires_at: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString()
           })
           .select()
           .single();
+
         if (error) {
           console.error('Error creating bill session:', error);
           throw error;
         }
         sessionData = data;
       }
+
+      // Store session info in localStorage
       localStorage.setItem("billSessionId", sessionData.id);
       localStorage.setItem("billSessionCode", code);
       localStorage.setItem("billSessionOwner", "true");
       localStorage.setItem("billSessionExpiresAt", sessionData.expires_at);
       localStorage.setItem("userName", userNameInput);
       localStorage.setItem("phoneNumber", phoneNumber);
+
       onOpenChange(false);
       navigate(`/menu-preview/${restaurantId}?table=${tableId}&sessionCode=${code}&userName=${encodeURIComponent(userNameInput)}`);
     } catch (error) {
@@ -230,6 +208,7 @@ const BillSelectionDialog: React.FC<BillSelectionDialogProps> = ({
         localStorage.setItem("deviceId", deviceId);
       }
       const code = joinPhoneNumber;
+
       // Check if a session with this phone number exists and is active
       const { data, error } = await supabase
         .from("bill_sessions")
@@ -238,11 +217,22 @@ const BillSelectionDialog: React.FC<BillSelectionDialogProps> = ({
         .eq("is_active", true)
         .gt("expires_at", new Date().toISOString())
         .single();
-      if (error) throw error;
-      if (!data) {
-        toast.error("Invalid or expired session code");
+
+      if (error) {
+        console.error("Error checking session:", error);
+        if (error.code === "PGRST116") {
+          toast.error("No active session found for this phone number. Please ask your friend to start a new bill first.");
+        } else {
+          toast.error("Failed to check session status. Please try again.");
+        }
         return;
       }
+
+      if (!data) {
+        toast.error("No active session found for this phone number. Please ask your friend to start a new bill first.");
+        return;
+      }
+
       // Store session info in localStorage
       localStorage.setItem("billSessionId", data.id);
       localStorage.setItem("billSessionCode", code);
@@ -250,8 +240,9 @@ const BillSelectionDialog: React.FC<BillSelectionDialogProps> = ({
       localStorage.setItem("billSessionExpiresAt", data.expires_at);
       localStorage.setItem("userName", userNameInput);
       localStorage.setItem("phoneNumber", joinPhoneNumber);
+
       onOpenChange(false);
-      navigate(`/menu-preview/${restaurantId}?table=${tableId}&sessionCode=${code}`);
+      navigate(`/menu-preview/${restaurantId}?table=${tableId}&sessionCode=${code}&userName=${encodeURIComponent(userNameInput)}`);
     } catch (error) {
       console.error("Error joining bill session:", error);
       toast.error("Failed to join bill. Please try again.");
