@@ -741,3 +741,130 @@ export const saveRestaurantMenu = async (restaurant: RestaurantUI) => {
     throw error;
   }
 };
+
+// Get basic restaurant info (fast initial load)
+export const getRestaurantBasicInfo = async (restaurantId: string) => {
+  const { data, error } = await supabase
+    .from('restaurants')
+    .select('id, name, description, image_url, orders_enabled, opening_time, closing_time, location, phone, wifi_password, google_review_link')
+    .eq('id', restaurantId)
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+// Get categories with basic info (second load)
+export const getRestaurantCategories = async (restaurantId: string) => {
+  const { data, error } = await supabase
+    .from('menu_categories')
+    .select('id, name, type, order')
+    .eq('restaurant_id', restaurantId)
+    .order('order', { ascending: true });
+
+  if (error) throw error;
+  return data;
+};
+
+// Get items for a specific category (load on demand)
+export const getCategoryItems = async (categoryId: string) => {
+  const { data, error } = await supabase
+    .from('menu_items')
+    .select(`
+      id,
+      name,
+      description,
+      price,
+      image_url,
+      is_available,
+      is_visible,
+      order,
+      dietary_type,
+      weight,
+      old_price,
+      menu_item_variants (
+        id,
+        name,
+        price,
+        order
+      ),
+      menu_item_customizations (
+        id,
+        name,
+        options,
+        required
+      ),
+      menu_item_addon_mapping (
+        addon_id,
+        menu_item_addons (
+          id,
+          title,
+          type,
+          menu_addon_options (
+            id,
+            name,
+            price,
+            order
+          )
+        )
+      )
+    `)
+    .eq('category_id', categoryId)
+    .eq('is_visible', true)
+    .order('order', { ascending: true });
+
+  if (error) throw error;
+  return data;
+};
+
+// Get all items for a restaurant (used for search functionality)
+export const getAllRestaurantItems = async (restaurantId: string) => {
+  const { data, error } = await supabase
+    .from('menu_items')
+    .select(`
+      id,
+      name,
+      description,
+      price,
+      image_url,
+      is_available,
+      is_visible,
+      order,
+      dietary_type,
+      weight,
+      old_price,
+      category_id,
+      menu_item_variants (
+        id,
+        name,
+        price,
+        order
+      ),
+      menu_item_customizations (
+        id,
+        name,
+        options,
+        required
+      ),
+      menu_item_addon_mapping (
+        addon_id,
+        menu_item_addons (
+          id,
+          title,
+          type,
+          menu_addon_options (
+            id,
+            name,
+            price,
+            order
+          )
+        )
+      )
+    `)
+    .eq('restaurant_id', restaurantId)
+    .eq('is_visible', true)
+    .order('order', { ascending: true });
+
+  if (error) throw error;
+  return data;
+};
