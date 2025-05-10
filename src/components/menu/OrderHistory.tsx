@@ -192,7 +192,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ tableId }) => {
               size="icon"
               onClick={handleRefresh}
               disabled={isRefreshing}
-              className="h-8 min-w-[150px] px-4 text-base font-semibold flex items-center gap-2"
+              className="h-8 min-w-[100px] px-4 text-base font-semibold flex items-center gap-2"
             >
               <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
               {/* <span className="hidden sm:inline">Refresh Orders</span> */}
