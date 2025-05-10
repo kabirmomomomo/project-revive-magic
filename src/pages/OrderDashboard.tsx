@@ -48,8 +48,14 @@
       fetchOrders();
       setupRealtimeSubscription();
       
+      // Add auto-refresh interval
+      const refreshInterval = setInterval(() => {
+        handleRefresh();
+      }, 10000);
+      
       return () => {
         supabase.removeAllChannels();
+        clearInterval(refreshInterval);
       };
     }, [restaurantId]);
 
@@ -219,10 +225,29 @@
     };
     
     const handleRefresh = async () => {
-      setIsRefreshing(true);
-      await fetchOrders();
-      setIsRefreshing(false);
-      toast.success('Orders refreshed');
+      if (!restaurantId) return;
+      
+      try {
+        setIsRefreshing(true);
+        
+        const { data, error } = await supabase
+          .from('orders')
+          .select(`
+            *,
+            items:order_items(*)
+          `)
+          .eq('restaurant_id', restaurantId)
+          .order('created_at', { ascending: false });
+          
+        if (error) throw error;
+        
+        setOrders(data || []);
+      } catch (err: any) {
+        console.error('Error refreshing orders:', err);
+        toast.error('Failed to refresh orders');
+      } finally {
+        setIsRefreshing(false);
+      }
     };
 
     const filteredOrders = orders.filter(order => {
