@@ -127,7 +127,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ tableId }) => {
       if (sessionCode) {
         await fetchSessionOrders(menuId, sessionCode);
       }
-      toast.success('Orders refreshed successfully');
+      // toast.success('Orders refreshed successfully');
     } catch (error) {
       console.error('Error refreshing orders:', error);
       toast.error('Failed to refresh orders');

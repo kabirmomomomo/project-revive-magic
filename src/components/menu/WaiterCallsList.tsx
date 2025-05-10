@@ -138,9 +138,15 @@ const WaiterCallsList: React.FC<WaiterCallsListProps> = ({ restaurantId }) => {
         console.log('Waiter calls subscription status:', status);
       });
 
+    // Add regular sync interval
+    const syncInterval = setInterval(() => {
+      fetchWaiterCalls();
+    }, 10000); // Sync every 10 seconds
+
     return () => {
-      console.log('Cleaning up waiter calls subscription');
+      console.log('Cleaning up waiter calls subscription and interval');
       subscription.unsubscribe();
+      clearInterval(syncInterval);
     };
   }, [restaurantId]);
 

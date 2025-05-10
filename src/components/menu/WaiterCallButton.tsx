@@ -30,6 +30,29 @@ const WaiterCallButton: React.FC<WaiterCallButtonProps> = ({ tableId, restaurant
     }
 
     try {
+      // First check if there's already a pending call for this table with the same reason
+      const { data: existingCalls, error: checkError } = await supabase
+        .from('waiter_calls')
+        .select('*')
+        .eq('table_id', tableId)
+        .eq('restaurant_id', restaurantId)
+        .eq('reason', reason)
+        .eq('status', 'pending');
+
+      if (checkError) {
+        console.error('Error checking existing calls:', checkError);
+        throw checkError;
+      }
+
+      if (existingCalls && existingCalls.length > 0) {
+        toast({
+          title: "Already Requested",
+          description: "This request is already pending. Please wait for the waiter to respond.",
+          variant: "default",
+        });
+        return;
+      }
+
       console.log('Attempting to create waiter call:', {
         table_id: tableId,
         restaurant_id: restaurantId,
