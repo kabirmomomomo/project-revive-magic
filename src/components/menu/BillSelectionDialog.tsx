@@ -324,7 +324,7 @@ const BillSelectionDialog: React.FC<BillSelectionDialogProps> = ({
                 className="space-y-4"
               >
                 <div className="space-y-2">
-                  <p className="text-sm text-blue-600 font-medium">Start a new bill to begin ordering and invite friends</p>
+                  <p className="text-sm text-blue-600 font-medium">Start new bill to begin ordering & invite friends</p>
                   <Button
                     variant="outline"
                     className="w-full h-12 flex items-center justify-center gap-2 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 transition-all duration-200 group"

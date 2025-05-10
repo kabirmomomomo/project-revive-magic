@@ -65,7 +65,7 @@ const MenuPreview = () => {
   const [isDbError, setIsDbError] = useState(false);
   const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({});
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState<CategoryType>("food");
+  const [activeTab, setActiveTab] = useState<CategoryType>("all");
   const isMobile = useIsMobile();
   
   // New state for bill selection dialog

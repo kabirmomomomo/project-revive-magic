@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CategoryType } from "@/types/menu";
@@ -45,14 +44,14 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({ activeTab, onTabChange, ord
 
   return (
     <Tabs value={activeTab} onValueChange={(value) => onTabChange(value as CategoryType)} className="w-full">
-      <TabsList className="w-full grid grid-cols-5 h-12 bg-amber-100 dark:bg-amber-900/20 p-0">
+      <TabsList className="w-full grid grid-cols-5 h-12 bg-gradient-to-r from-blue-50 to-purple-50 p-0">
         {tabs.map((tab) => (
           <TabsTrigger
             key={tab.value}
             value={tab.value}
             className={cn(
-              "flex items-center justify-center h-full data-[state=active]:bg-teal-800 data-[state=active]:text-white",
-              tab.value === activeTab ? "font-bold" : "font-medium",
+              "flex items-center justify-center h-full data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-purple-600 data-[state=active]:text-white hover:from-blue-100 hover:to-purple-100 transition-all duration-300",
+              tab.value === activeTab ? "font-bold" : "font-medium text-gray-700",
               isMobile ? "text-xs" : "text-base"
             )}
             onClick={() => console.log(`Tab clicked: ${tab.value}`)}

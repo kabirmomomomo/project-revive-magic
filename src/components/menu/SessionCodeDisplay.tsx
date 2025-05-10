@@ -8,15 +8,16 @@ const SessionCodeDisplay: React.FC = () => {
   if (!sessionCode) return null;
 
   return (
-    <div className="fixed top-4 left-4 z-50">
+      <div className="fixed top-2 left-2 z-50">
       <Badge 
-        variant="outline" 
-        className="bg-purple-50 text-purple-700 border-purple-200 px-3 py-1.5 text-sm font-medium shadow-sm"
-      >
-        <Users className="h-4 w-4 mr-1.5" />
-        Phone No/OTP: {sessionCode}
+           variant="outline" 
+             className="bg-purple-50 text-purple-700 border-purple-200 px-2 py-1 text-xs font-medium shadow-sm"
+              >
+              <Users className="h-3 w-3 mr-1" />
+              Phone: {sessionCode}
       </Badge>
-    </div>
+      </div>
+
   );
 };
 

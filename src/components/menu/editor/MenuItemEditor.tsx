@@ -178,7 +178,7 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
             <TabsList className="p-4">
               <TabsTrigger value="details">Details</TabsTrigger>
               <TabsTrigger value="variants">Variants</TabsTrigger>
-              <TabsTrigger value="addons">Add-ons</TabsTrigger>
+              {/* <TabsTrigger value="addons">Add-ons</TabsTrigger> */}
             </TabsList>
             <Separator />
             <TabsContent value="details" className="space-y-4 p-4">

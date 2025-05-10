@@ -220,9 +220,9 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ tableId }) => {
 
           {sessionCode && (
             <div className="order-1 lg:order-2">
-              <div className="text-sm text-muted-foreground mb-2 sticky top-0 bg-white py-2">
+              {/* <div className="text-sm text-muted-foreground mb-2 sticky top-0 bg-white py-2">
                 Table Orders
-              </div>
+              </div> */}
               <div className="overflow-y-auto">
                 <TableOrders />
               </div>

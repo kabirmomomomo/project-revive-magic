@@ -37,10 +37,10 @@ const QRCodeDialog: React.FC<QRCodeDialogProps> = ({ qrCodeValue }) => {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-2 rounded-full hover:shadow-md transition-all">
+        {/* <Button variant="outline" size="sm" className="gap-2 rounded-full hover:shadow-md transition-all">
           <QrCode className="h-4 w-4" />
           QR Code
-        </Button>
+        </Button> */}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>

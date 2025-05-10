@@ -77,20 +77,20 @@ const MenuItem: React.FC<MenuItemProps> = React.memo(({ item, index, ordersEnabl
     <div
       key={item.id}
       className={cn(
-        "border-b pb-4 last:border-b-0 transition-all duration-300 rounded-lg bg-white",
-        isMobile ? "p-2" : "p-4",
-        "hover:scale-[1.02] hover:shadow-md hover:bg-gradient-to-r hover:from-white hover:to-purple-50",
+        "border-b pb-3 last:border-b-0 transition-all duration-300 rounded-lg bg-white",
+        isMobile ? "p-2" : "p-3",
+        "hover:scale-[1.01] hover:shadow-md hover:bg-gradient-to-r hover:from-white hover:to-purple-50",
         "animate-fade-in",
         index % 2 === 0 ? "bg-gradient-to-r from-purple-50/40 to-white" : "bg-white",
         !item.is_available && "opacity-60"
       )}
     >
-      <div className={cn("flex flex-col items-center gap-2 w-full", isMobile ? "" : "flex-row items-start")}>
+      <div className="flex items-center justify-between gap-2 w-full">
         {item.image_url && (
           <div
             className={cn(
-              "overflow-hidden rounded-md border border-purple-100 bg-gray-100 mx-auto",
-              isMobile ? "w-14 h-14 mb-1" : "w-20 h-20 mr-3 mb-0"
+              "overflow-hidden rounded-md border border-purple-100 bg-gray-100",
+              isMobile ? "w-16 h-16" : "w-20 h-20"
             )}
           >
             <img
@@ -104,45 +104,102 @@ const MenuItem: React.FC<MenuItemProps> = React.memo(({ item, index, ordersEnabl
           </div>
         )}
 
-        <div className={cn(
-          "flex-1 min-w-0 flex flex-col w-full",
-          isMobile ? "items-center text-center" : "items-start text-left"
-        )}>
-          <div className={cn(
-            "flex items-center justify-between w-full gap-2",
-            isMobile ? "flex-col items-center gap-0 mb-1" : ""
-          )}>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-1">
               {dietaryIcon}
               <h3 className={cn(
                 "font-semibold text-purple-900 truncate leading-tight",
-                isMobile ? "text-xs w-full mb-0 px-1" : "text-lg"
+                isMobile ? "text-sm" : "text-base"
               )}>
                 {item.name}
               </h3>
             </div>
-            <div className={cn(
-              "flex flex-col items-end gap-0 flex-shrink-0",
-              isMobile ? "items-center" : ""
-            )}>
-              {item.old_price && parseFloat(item.old_price) > 0 && (
-                <span className="text-sm line-through text-gray-500">
-                  ₹{parseFloat(item.old_price).toFixed(2)}
-                </span>
-              )}
-              {(!item.variants || item.variants.length === 0) && (
-                <span className="text-lg font-bold text-purple-900">
-                  ₹{parseFloat(effectivePrice).toFixed(2)}
-                </span>
+            <div className="flex items-center gap-2">
+              <div className="flex flex-col items-end">
+                {item.old_price && parseFloat(item.old_price) > 0 && (
+                  <span className="text-xs line-through text-gray-500">
+                    ₹{parseFloat(item.old_price).toFixed(2)}
+                  </span>
+                )}
+                {(!item.variants || item.variants.length === 0) && (
+                  <span className="text-sm font-bold text-purple-900">
+                    ₹{parseFloat(effectivePrice).toFixed(2)}
+                  </span>
+                )}
+              </div>
+              {item.is_available ? (
+                itemQuantity > 0 && ordersEnabled ? (
+                  <div className={cn(
+                    "flex items-center gap-1 bg-purple-50 rounded-full shadow-sm",
+                    isMobile ? "p-[2px]" : "p-0.5"
+                  )}>
+                    <Button
+                      onClick={decrementQuantity}
+                      size="sm"
+                      className={cn(
+                        "bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white rounded-full flex items-center justify-center shadow-sm transition-transform hover:scale-105",
+                        isMobile ? "h-6 w-6 p-0 min-w-0" : "h-7 w-7 p-0"
+                      )}
+                    >
+                      <MinusCircle size={isMobile ? 13 : 15} />
+                      <span className="sr-only">Decrease quantity</span>
+                    </Button>
+                    <span className={cn(
+                      "font-medium text-center text-purple-900",
+                      isMobile ? "text-xs w-5" : "text-sm w-6"
+                    )}>
+                      {itemQuantity}
+                    </span>
+                    <Button
+                      onClick={incrementQuantity}
+                      size="sm"
+                      className={cn(
+                        "bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white rounded-full flex items-center justify-center shadow-sm transition-transform hover:scale-105",
+                        isMobile ? "h-6 w-6 p-0 min-w-0" : "h-7 w-7 p-0"
+                      )}
+                    >
+                      <PlusCircle size={isMobile ? 13 : 15} />
+                      <span className="sr-only">Increase quantity</span>
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    onClick={incrementQuantity}
+                    size="sm"
+                    disabled={!ordersEnabled}
+                    className={cn(
+                      "bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white rounded-full flex items-center gap-1 shadow-sm hover:scale-105 transition-transform",
+                      !ordersEnabled && "opacity-50 pointer-events-none blur-[1px]",
+                      isMobile ? "text-xs px-3 h-7" : "text-sm px-4 h-8"
+                    )}
+                  >
+                    <PlusCircle size={isMobile ? 13 : 15} />
+                    <span>Add</span>
+                  </Button>
+                )
+              ) : (
+                <Button
+                  disabled
+                  size="sm"
+                  variant="ghost"
+                  className={cn(
+                    "text-red-500 cursor-not-allowed",
+                    isMobile ? "text-xs" : "text-sm"
+                  )}
+                >
+                  <CircleSlash size={isMobile ? 13 : 15} className="mr-1" />
+                  Out of stock
+                </Button>
               )}
             </div>
           </div>
 
           {item.description && (
             <p className={cn(
-              "text-gray-500 mt-1 mb-1 truncate break-words",
+              "text-gray-500 mt-0.5 truncate break-words",
               isMobile
-                ? "text-[10px] leading-tight font-normal line-clamp-2 px-1"
+                ? "text-[10px] leading-tight font-normal line-clamp-1"
                 : "text-xs font-normal leading-relaxed line-clamp-2"
             )}>
               {item.description}
@@ -150,29 +207,29 @@ const MenuItem: React.FC<MenuItemProps> = React.memo(({ item, index, ordersEnabl
           )}
 
           {!item.is_available && (
-            <div className="mb-1 flex items-center gap-1 text-red-500 justify-center">
+            <div className="mt-1 flex items-center gap-1 text-red-500">
               <CircleSlash size={12} />
               <span className="text-[10px] font-medium">Out of stock</span>
             </div>
           )}
 
           {hasOptions && (
-            <div className={cn("space-y-2 mb-1 w-full", isMobile ? "px-1" : "")}>
+            <div className={cn("space-y-1 mt-1", isMobile ? "px-0" : "")}>
               {item.variants && item.variants.length > 0 && (
                 <div className={cn(
-                  "border rounded-md bg-purple-50/40 border-purple-100 w-full mx-auto",
-                  isMobile ? "p-0.5" : "p-1.5"
+                  "border rounded-md bg-purple-50/40 border-purple-100",
+                  isMobile ? "p-1" : "p-1.5"
                 )}>
                   <span className={cn(
-                      "text-xs font-medium text-purple-900 mb-1 block",
-                      isMobile ? "mb-0 px-1" : ""
-                    )}>
+                    "text-xs font-medium text-purple-900 mb-1 block",
+                    isMobile ? "mb-0" : ""
+                  )}>
                     Options:
                   </span>
                   <RadioGroup
                     value={selectedVariant?.id}
                     onValueChange={handleVariantChange}
-                    className={cn("space-y-1", isMobile ? "gap-0" : "")}
+                    className={cn("space-y-0.5", isMobile ? "gap-0" : "")}
                   >
                     {item.variants.map(variant => (
                       <div key={variant.id} className={cn(
@@ -199,14 +256,14 @@ const MenuItem: React.FC<MenuItemProps> = React.memo(({ item, index, ordersEnabl
 
               {item.addons && item.addons.length > 0 && (
                 <div className={cn(
-                  "border-l-2 border-purple-200 w-full",
+                  "border-l-2 border-purple-200",
                   isMobile ? "pl-1" : "pl-2"
                 )}>
                   {item.addons.map(addon => (
                     <div key={addon.id} className="mb-1">
                       <span className="text-xs font-medium text-gray-700 mb-0.5 block">{addon.title}:</span>
                       <div className={cn(
-                        "grid gap-2",
+                        "grid gap-1",
                         isMobile ? "grid-cols-1" : "grid-cols-2"
                       )}>
                         {addon.options.map(option => (
@@ -224,76 +281,6 @@ const MenuItem: React.FC<MenuItemProps> = React.memo(({ item, index, ordersEnabl
               )}
             </div>
           )}
-
-          <div className={cn(
-            "flex w-full justify-end items-center mt-1",
-            isMobile ? "justify-center gap-2" : ""
-          )}>
-            {item.is_available ? (
-              itemQuantity > 0 && ordersEnabled ? (
-                <div className={cn(
-                  "flex items-center gap-1 bg-purple-50 rounded-full shadow-sm",
-                  isMobile ? "p-[2px]" : "p-0.5"
-                )}>
-                  <Button
-                    onClick={decrementQuantity}
-                    size="sm"
-                    className={cn(
-                      "bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white rounded-full flex items-center justify-center shadow-sm transition-transform hover:scale-105",
-                      isMobile ? "h-6 w-6 p-0 min-w-0" : "h-7 w-7 p-0"
-                    )}
-                  >
-                    <MinusCircle size={isMobile ? 13 : 15} />
-                    <span className="sr-only">Decrease quantity</span>
-                  </Button>
-                  <span className={cn(
-                    "font-medium text-center text-purple-900",
-                    isMobile ? "text-xs w-5" : "text-base w-8"
-                  )}>
-                    {itemQuantity}
-                  </span>
-                  <Button
-                    onClick={incrementQuantity}
-                    size="sm"
-                    className={cn(
-                      "bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white rounded-full flex items-center justify-center shadow-sm transition-transform hover:scale-105",
-                      isMobile ? "h-6 w-6 p-0 min-w-0" : "h-7 w-7 p-0"
-                    )}
-                  >
-                    <PlusCircle size={isMobile ? 13 : 15} />
-                    <span className="sr-only">Increase quantity</span>
-                  </Button>
-                </div>
-              ) : (
-                <Button
-                  onClick={incrementQuantity}
-                  size="sm"
-                  disabled={!ordersEnabled}
-                  className={cn(
-                    "bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white rounded-full flex items-center gap-1 shadow-sm hover:scale-105 transition-transform",
-                    !ordersEnabled && "opacity-50 pointer-events-none blur-[1px]",
-                    isMobile ? "text-xs px-2 h-6 py-1 min-w-0" : "text-sm px-4 py-1"
-                  )}
-                >
-                  <PlusCircle size={isMobile ? 13 : 15} />
-                  <span className={isMobile ? "hidden sm:inline" : ""}>Add to cart</span>
-                </Button>
-              )
-            ) : (
-              <Button
-                disabled
-                size="sm"
-                variant="ghost"
-                className={cn(
-                  "text-red-500 cursor-not-allowed",
-                  isMobile ? "text-xs" : "text-sm"
-                )}
-              >
-                <CircleSlash size={isMobile ? 13 : 15} className="mr-1" />
-                Out of stock
-              </Button>
-            )}
-          </div>
         </div>
       </div>
     </div>
