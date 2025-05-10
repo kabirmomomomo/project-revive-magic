@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Clock, ChevronDown, ChevronUp, Smartphone, Receipt, Users, Table, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import { useOrders } from '@/contexts/OrderContext';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import {
@@ -114,6 +114,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ tableId }) => {
   const { menuId } = useParams();
   const [searchParams] = useSearchParams();
   const sessionCode = searchParams.get('sessionCode');
+  const navigate = useNavigate();
 
   const handleRefresh = async () => {
     if (!menuId) return;
@@ -173,7 +174,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ tableId }) => {
       </DrawerTrigger>
       <DrawerContent className="px-4 pb-6 h-[90vh] md:h-[85vh] flex flex-col">
         <DrawerHeader className="text-left sticky top-0 bg-white z-10 border-b">
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center relative">
             <DrawerTitle className="text-xl flex items-center gap-2">
               <Clock className="h-5 w-5" />
               Order History
@@ -184,15 +185,28 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ tableId }) => {
                 </Badge>
               )}
             </DrawerTitle>
+            <div className="flex items-center gap-10 absolute right-0 top-0 z-20">
             <Button
-              variant="outline"
-              size="icon"
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-              className="h-8 w-8"
-            >
-              <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
-            </Button>
+  variant="outline"
+  size="icon"
+  onClick={handleRefresh}
+  disabled={isRefreshing}
+  className="h-8 min-w-[150px] px-4 text-base font-semibold flex items-center gap-2"
+>
+  <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
+  <span className="hidden sm:inline">Refresh Orders</span>
+</Button>
+
+              {menuId && (
+                <Button
+                  size="sm"
+                  className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold shadow-md rounded-full px-4 py-2"
+                  onClick={() => navigate(`/payment/${menuId}`)}
+                >
+                  Proceed to Payment
+                </Button>
+              )}
+            </div>
           </div>
         </DrawerHeader>
 

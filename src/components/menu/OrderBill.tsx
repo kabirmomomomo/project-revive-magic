@@ -13,10 +13,12 @@ interface OrderBillProps {
   hideCardWrapper?: boolean;
   showDownloadButton?: boolean;
   className?: string;
+  orders?: any[];
 }
 
-const OrderBill: React.FC<OrderBillProps> = ({ hideCardWrapper = false, showDownloadButton = true, className }) => {
-  const { orders } = useOrders();
+const OrderBill: React.FC<OrderBillProps> = ({ hideCardWrapper = false, showDownloadButton = true, className, orders: propOrders }) => {
+  const { orders: contextOrders } = useOrders();
+  const orders = propOrders || contextOrders;
   const billRef = useRef<HTMLDivElement>(null);
   const { menuId } = useParams();
 

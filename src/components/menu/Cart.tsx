@@ -54,7 +54,14 @@ const Cart: React.FC<CartProps> = ({ tableId, sessionId, sessionCode, isSessionO
           )}
         </Button>
       </SheetTrigger>
-      <SheetContent className="w-full sm:max-w-md border-l border-purple-100 bg-gradient-to-b from-white to-purple-50">
+      <SheetContent side="bottom" className="w-full sm:max-w-md border-t border-purple-100 bg-gradient-to-b from-white to-purple-50 rounded-t-2xl">
+        <button
+          onClick={() => setOpen(false)}
+          className="absolute right-4 top-4 z-10 rounded-full p-1 text-gray-400 hover:text-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-300"
+          aria-label="Close cart"
+        >
+          <X className="h-9 w-9" />
+        </button>
         <SheetHeader>
           <SheetTitle className="text-xl flex items-center gap-2 text-purple-900">
             <ShoppingCart className="h-5 w-5" />

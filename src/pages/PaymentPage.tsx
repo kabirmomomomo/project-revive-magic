@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -13,11 +12,14 @@ import {
   AccordionTrigger,
   AccordionContent,
 } from '@/components/ui/accordion';
-import { Download } from 'lucide-react';
+import { Download, Copy } from 'lucide-react';
+import { useOrders } from '@/contexts/OrderContext';
+import { toast } from '@/components/ui/sonner';
 
 const PaymentPage = () => {
   const { menuId } = useParams();
   const [orderSummaryOpen, setOrderSummaryOpen] = useState(false);
+  const { sessionOrders, tableOrders } = useOrders();
 
   const { data: restaurant, isLoading } = useQuery({
     queryKey: ['restaurant-payment', menuId],
@@ -75,7 +77,7 @@ const PaymentPage = () => {
               Order Summary
             </AccordionTrigger>
             <AccordionContent>
-              <OrderBill hideCardWrapper showDownloadButton className="mt-2" />
+              <OrderBill hideCardWrapper showDownloadButton className="mt-2" orders={sessionOrders.length > 0 ? sessionOrders : tableOrders} />
             </AccordionContent>
           </AccordionItem>
         </Accordion>
@@ -100,20 +102,30 @@ const PaymentPage = () => {
           )}
           
           {restaurant.upi_id && (
-            <div className="space-y-2">
-              <h3 className="font-medium">UPI ID</h3>
-              <p className="text-lg font-mono bg-gray-50 p-2 rounded border select-all">
+            <div className="flex justify-center items-center gap-2 w-full mt-1 mb-2">
+              <p className="text-lg font-mono bg-gray-50 p-2 rounded border select-all mb-0 text-center break-all max-w-xs sm:max-w-sm">
                 {restaurant.upi_id}
               </p>
+              <button
+                type="button"
+                className="p-1 rounded hover:bg-purple-100 transition-colors"
+                onClick={() => {
+                  navigator.clipboard.writeText(restaurant.upi_id);
+                  toast.success('UPI ID copied to clipboard');
+                }}
+                aria-label="Copy UPI ID"
+              >
+                <Copy className="h-5 w-5 text-purple-600" />
+              </button>
             </div>
           )}
 
-          <Button
+          {/* <Button
             onClick={() => window.location.href = '/thank-you'}
             className="w-full mt-6 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white"
           >
             Confirm Payment
-          </Button>
+          </Button> */}
         </CardContent>
       </Card>
     </div>
