@@ -185,28 +185,27 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ tableId }) => {
                 </Badge>
               )}
             </DrawerTitle>
-            <div className="flex items-center gap-10 absolute right-0 top-0 z-20">
+          </div>
+          <div className="flex flex-wrap gap-4 mt-4">
             <Button
-  variant="outline"
-  size="icon"
-  onClick={handleRefresh}
-  disabled={isRefreshing}
-  className="h-8 min-w-[150px] px-4 text-base font-semibold flex items-center gap-2"
->
-  <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
-  <span className="hidden sm:inline">Refresh Orders</span>
-</Button>
-
-              {menuId && (
-                <Button
-                  size="sm"
-                  className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold shadow-md rounded-full px-4 py-2"
-                  onClick={() => navigate(`/payment/${menuId}`)}
-                >
-                  Proceed to Payment
-                </Button>
-              )}
-            </div>
+              variant="outline"
+              size="icon"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="h-8 min-w-[150px] px-4 text-base font-semibold flex items-center gap-2"
+            >
+              <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
+              {/* <span className="hidden sm:inline">Refresh Orders</span> */}
+            </Button>
+            {menuId && (
+              <Button
+                size="sm"
+                className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold shadow-md rounded-full px-4 py-2"
+                onClick={() => navigate(`/payment/${menuId}`)}
+              >
+                Proceed to Payment
+              </Button>
+            )}
           </div>
         </DrawerHeader>
 
