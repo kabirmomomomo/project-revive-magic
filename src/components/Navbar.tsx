@@ -48,7 +48,7 @@ const Navbar = () => {
       <div className="max-w-7xl mx-auto flex items-center justify-between px-6">
         {/* Logo */}
         <a href="/" className="text-2xl font-bold tracking-tight bg-gradient-to-r from-blue-400 via-purple-400 to-indigo-400 bg-clip-text text-transparent">
-          Easy<span className="text-white">Menu</span>
+        Dine<span className="text-white">Tree</span>
         </a>
 
         {/* Desktop Nav */}

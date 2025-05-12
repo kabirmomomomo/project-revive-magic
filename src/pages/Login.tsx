@@ -119,7 +119,7 @@ const Login = () => {
           
           <Link to="/" className="inline-block">
             <h2 className="font-mono text-4xl font-semibold text-gray-800">
-              Easy<span className="font-medium text-blue-600">Menu</span>
+            Dine<span className="font-medium text-blue-600">Tree</span>
             </h2>
           </Link>
           <h1 className="mt-4 text-2xl font-bold text-gray-800">Welcome back</h1>
@@ -277,7 +277,7 @@ const Login = () => {
           </div>
         )}
 
-        <div className="text-center">
+        {/* <div className="text-center">
           <p className="text-sm text-gray-600">
             Don't have an account?{" "}
             <Link 
@@ -287,7 +287,7 @@ const Login = () => {
               Sign up
             </Link>
           </p>
-        </div>
+        </div> */}
       </div>
 
       {/* Custom CSS using standard style tag - fixed the jsx and global attributes */}

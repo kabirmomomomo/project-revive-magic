@@ -5,7 +5,7 @@ const testimonials = [
   {
     name: "Rohan S.",
     title: "Owner, Bombay Bistro",
-    quote: "EasyMenu transformed our restaurant experience. Guests love the sleek digital menu, and we've seen faster table turnover.",
+    quote: "DineTree transformed our restaurant experience. Guests love the sleek digital menu, and we've seen faster table turnover.",
   },
   {
     name: "Neha M.",
@@ -15,7 +15,7 @@ const testimonials = [
   {
     name: "Aditya T.",
     title: "Founder, Spice Junction",
-    quote: "The sales have gone up since we adopted EasyMenu. The visuals help customers order more confidently.",
+    quote: "The sales have gone up since we adopted DineTree. The visuals help customers order more confidently.",
   },
 ];
 

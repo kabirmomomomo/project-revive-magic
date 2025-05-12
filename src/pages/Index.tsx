@@ -29,7 +29,7 @@ const Index = () => {
     }
     
     // Change page title
-    document.title = "EasyMenu — Design Studio";
+    document.title = "DineTree — Design Studio";
     
     // Smooth scrolling for anchor links
     const handleHashChange = () => {

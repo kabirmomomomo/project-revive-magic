@@ -86,7 +86,7 @@ const About = () => {
           transition={{ duration: 0.8, delay: 0.4 }}
         >
           <p className="text-lg md:text-xl text-gray-400 mb-4">
-            From stylish QR code interfaces to full-service order management, EasyMenu is crafted for the modern diner and smart restaurateur alike.
+            From stylish QR code interfaces to full-service order management, DineTree is crafted for the modern diner and smart restaurateur alike.
           </p>
           <p className="text-md text-gray-500">
             Say goodbye to clunky menus and hello to an interactive, intuitive experience—no downloads, no friction.

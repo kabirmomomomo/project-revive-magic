@@ -199,7 +199,7 @@ const MenuPreview = () => {
     setActiveTab(tab);
     setSearchQuery("");
   }, []);
-
+  
   // Memoize QR code value
   const qrCodeValue = useMemo(() => {
     if (!restaurantToDisplay) return '';
@@ -212,7 +212,7 @@ const MenuPreview = () => {
     
     return tableId ? `${baseUrl}?table=${tableId}` : baseUrl;
   }, [restaurantToDisplay, tableId, sessionCode]);
-
+  
   // Memoize isOrderingEnabled
   const isOrderingEnabled = useMemo(() => 
     restaurantToDisplay?.ordersEnabled !== false,
@@ -268,7 +268,7 @@ const MenuPreview = () => {
       }
     }
   }, [tableId, restaurantToDisplay, searchParams]);
-
+  
   // Show loading state for initial load
   if (isLoadingBasicInfo || isLoadingCategories) {
     return <LoadingAnimation />;
@@ -327,8 +327,8 @@ const MenuPreview = () => {
           <div className={isMobile ? "px-2" : "px-6"}>
             <SearchBar onSearch={handleSearch} />
             
-            <MenuList
-              categories={restaurantToDisplay.categories}
+            <MenuList 
+              categories={restaurantToDisplay.categories} 
               openCategories={openCategoriesRecord}
               toggleCategory={toggleCategory}
               searchQuery={searchQuery}

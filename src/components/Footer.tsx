@@ -14,7 +14,7 @@ const Footer = () => {
           transition={{ duration: 0.8 }}
         >
           <a href="/" className="text-2xl font-bold tracking-tight bg-gradient-to-r from-blue-400 via-purple-400 to-indigo-400 bg-clip-text text-transparent block mb-4">
-            Easy<span className="text-white">Menu</span>
+          Dine<span className="text-white">Tree</span>
           </a>
           <p className="text-gray-400">
             QR code Menu, that works for you
@@ -84,7 +84,7 @@ const Footer = () => {
         whileInView={{ opacity: 1 }}
         transition={{ duration: 0.6, delay: 0.4 }}
       >
-        <p className="mb-4 md:mb-0">© {currentYear} EasyMenu. All rights reserved.</p>
+        <p className="mb-4 md:mb-0">© {currentYear} DineTree. All rights reserved.</p>
         <div className="space-x-6">
           <a href="#" className="hover:text-white transition">Privacy Policy</a>
           <a href="#" className="hover:text-white transition">Terms of Service</a>

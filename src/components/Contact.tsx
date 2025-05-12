@@ -64,10 +64,10 @@ const Contact = () => {
             <div>
               <h3 className="font-semibold text-white mb-1">Email Us</h3>
               <a
-                href="mailto:EasyMenu@gmail.com"
+                href="mailto:support@dinetree.com "
                 className="text-lg text-gray-300 hover:text-blue-400 transition flex items-center group"
               >
-                EasyMenu@gmail.com
+                support@dinetree.com 
                 <ArrowUpRight size={16} className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity" />
               </a>
             </div>
