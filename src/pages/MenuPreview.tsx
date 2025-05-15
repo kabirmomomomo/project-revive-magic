@@ -377,7 +377,7 @@ const MenuPreview = () => {
           />
         )}
         
-        {tableId && restaurantToDisplay && (
+        {tableId && restaurantToDisplay && isOrderingEnabled && (
           <BillSelectionDialog
             open={showBillDialog}
             onOpenChange={setShowBillDialog}
