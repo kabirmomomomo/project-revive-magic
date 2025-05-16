@@ -8,6 +8,19 @@ import RestaurantDetailsDialog from "@/components/menu/RestaurantDetailsDialog";
 import ChangePasswordDialog from "./ChangePasswordDialog";
 import TableQRDialog from "@/components/menu/TableQRDialog";
 import { supabase } from '@/lib/supabase';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { 
+  getRestaurantUsers, 
+  addRestaurantUser, 
+  updateRestaurantUserRole, 
+  deleteRestaurantUser,
+  type UserRole,
+  type RestaurantUser 
+} from "@/services/userService";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { toast } from "@/components/ui/use-toast";
 
 interface EditorHeaderProps {
   restaurant: RestaurantUI;
@@ -27,78 +40,66 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
   showUserManagement,
 }) => {
   const navigate = useNavigate();
-
-  // User management state
-  const [users, setUsers] = useState<any[]>([]);
+  const queryClient = useQueryClient();
   const [newUserEmail, setNewUserEmail] = useState("");
-  const [newUserRole, setNewUserRole] = useState("staff");
-  const [loadingUsers, setLoadingUsers] = useState(false);
-  const [addingUser, setAddingUser] = useState(false);
+  const [newUserRole, setNewUserRole] = useState<UserRole>("staff");
+  const [isAddingUser, setIsAddingUser] = useState(false);
 
-  // Fetch users for this restaurant
-  useEffect(() => {
-    if (!showUserManagement || !restaurant.id) return;
-    setLoadingUsers(true);
-    supabase
-      .from('app_users')
-      .select('*')
-      .eq('restaurant_id', restaurant.id)
-      .then(({ data }) => {
-        setUsers(data || []);
-        setLoadingUsers(false);
-      });
-  }, [showUserManagement, restaurant.id]);
+  // Fetch restaurant users
+  const { data: users = [], isLoading: isLoadingUsers } = useQuery({
+    queryKey: ['restaurant-users', restaurant.id],
+    queryFn: () => getRestaurantUsers(restaurant.id),
+    enabled: showUserManagement,
+  });
 
-  // Add user
+  // Add user mutation
+  const addUserMutation = useMutation({
+    mutationFn: () => addRestaurantUser(newUserEmail, newUserRole, restaurant.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['restaurant-users', restaurant.id] });
+      setNewUserEmail("");
+      setNewUserRole("staff");
+      setIsAddingUser(false);
+    },
+  });
+
+  // Update role mutation
+  const updateRoleMutation = useMutation({
+    mutationFn: ({ userId, newRole }: { userId: string; newRole: UserRole }) => 
+      updateRestaurantUserRole(userId, newRole),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['restaurant-users', restaurant.id] });
+    },
+  });
+
+  // Delete user mutation
+  const deleteUserMutation = useMutation({
+    mutationFn: (userId: string) => deleteRestaurantUser(userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['restaurant-users', restaurant.id] });
+    },
+  });
+
   const handleAddUser = async () => {
-    if (!newUserEmail || !newUserRole) return;
-    setAddingUser(true);
-    await supabase
-      .from('app_users')
-      .upsert({
-        email: newUserEmail,
-        role: newUserRole,
-        restaurant_id: restaurant.id,
-      })
-      .then(() => {
-        setNewUserEmail("");
-        setNewUserRole("staff");
-        // Refresh user list
-        return supabase
-          .from('app_users')
-          .select('*')
-          .eq('restaurant_id', restaurant.id)
-          .then(({ data }) => setUsers(data || []));
+    if (!newUserEmail) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Please enter an email address"
       });
-    setAddingUser(false);
+      return;
+    }
+    await addUserMutation.mutateAsync();
   };
 
-  // Change user role
-  const handleChangeRole = async (userId: string, newRole: string) => {
-    await supabase
-      .from('app_users')
-      .update({ role: newRole })
-      .eq('id', userId);
-    // Refresh user list
-    const { data } = await supabase
-      .from('app_users')
-      .select('*')
-      .eq('restaurant_id', restaurant.id);
-    setUsers(data || []);
+  const handleUpdateRole = async (userId: string, newRole: UserRole) => {
+    await updateRoleMutation.mutateAsync({ userId, newRole });
   };
 
-  // Remove user
-  const handleRemoveUser = async (userId: string) => {
-    await supabase
-      .from('app_users')
-      .delete()
-      .eq('id', userId);
-    // Refresh user list
-    const { data } = await supabase
-      .from('app_users')
-      .select('*')
-      .eq('restaurant_id', restaurant.id);
-    setUsers(data || []);
+  const handleDeleteUser = async (userId: string) => {
+    if (window.confirm("Are you sure you want to remove this user's access?")) {
+      await deleteUserMutation.mutateAsync(userId);
+    }
   };
 
   return (
@@ -109,66 +110,88 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
           Create and edit your restaurant menu
         </p>
         {showUserManagement && (
-          <div className="mt-2 border rounded-lg p-3 bg-purple-50">
-            <h2 className="font-semibold mb-2">User Management</h2>
-            <div className="flex gap-2 mb-2">
-              <input
-                type="email"
-                placeholder="User email"
-                value={newUserEmail}
-                onChange={e => setNewUserEmail(e.target.value)}
-                className="border rounded px-2 py-1 text-sm"
-              />
-              <select
-                value={newUserRole}
-                onChange={e => setNewUserRole(e.target.value)}
-                className="border rounded px-2 py-1 text-sm"
-              >
-                <option value="admin">Admin</option>
-                <option value="manager">Manager</option>
-                <option value="staff">Staff</option>
-              </select>
-              <Button size="sm" onClick={handleAddUser} disabled={addingUser || !newUserEmail}>
-                Add
+          <Dialog open={isAddingUser} onOpenChange={setIsAddingUser}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="bg-purple-50 hover:bg-purple-100">
+                Manage Users
               </Button>
-            </div>
-            {loadingUsers ? (
-              <div>Loading users...</div>
-            ) : (
-              <table className="w-full text-xs">
-                <thead>
-                  <tr>
-                    <th className="text-left">Email</th>
-                    <th className="text-left">Role</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {users.map(user => (
-                    <tr key={user.id}>
-                      <td>{user.email}</td>
-                      <td>
-                        <select
-                          value={user.role}
-                          onChange={e => handleChangeRole(user.id, e.target.value)}
-                          className="border rounded px-1 py-0.5 text-xs"
-                        >
-                          <option value="admin">Admin</option>
-                          <option value="manager">Manager</option>
-                          <option value="staff">Staff</option>
-                        </select>
-                      </td>
-                      <td>
-                        <Button size="sm" variant="destructive" onClick={() => handleRemoveUser(user.id)}>
-                          Remove
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
+            </DialogTrigger>
+            <DialogContent className="max-w-3xl">
+              <DialogHeader>
+                <DialogTitle>Manage Restaurant Users</DialogTitle>
+              </DialogHeader>
+              
+              <div className="space-y-4">
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Enter user email"
+                    value={newUserEmail}
+                    onChange={(e) => setNewUserEmail(e.target.value)}
+                    className="flex-1"
+                  />
+                  <Select value={newUserRole} onValueChange={(value: UserRole) => setNewUserRole(value)}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Select role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="manager">Manager</SelectItem>
+                      <SelectItem value="staff">Staff</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button 
+                    onClick={handleAddUser}
+                    disabled={addUserMutation.isPending}
+                  >
+                    Add User
+                  </Button>
+                </div>
+
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Role</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {users.map((user: RestaurantUser) => (
+                      <TableRow key={user.id}>
+                        <TableCell>{user.email}</TableCell>
+                        <TableCell>
+                          <Select
+                            value={user.role}
+                            onValueChange={(value: UserRole) => handleUpdateRole(user.id, value)}
+                            disabled={updateRoleMutation.isPending}
+                          >
+                            <SelectTrigger className="w-[180px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="admin">Admin</SelectItem>
+                              <SelectItem value="manager">Manager</SelectItem>
+                              <SelectItem value="staff">Staff</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDeleteUser(user.id)}
+                            disabled={deleteUserMutation.isPending}
+                          >
+                            Remove
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </DialogContent>
+          </Dialog>
         )}
       </div>
       <div className="flex flex-wrap gap-2 w-full md:w-auto">
