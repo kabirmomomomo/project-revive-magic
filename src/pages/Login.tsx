@@ -20,6 +20,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { Separator } from "@/components/ui/separator";
+import { getUserRestaurant } from "@/services/menuService";
+import { getStaffRestaurants } from "@/services/userService";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
@@ -98,15 +100,22 @@ const Login = () => {
   };
 
   useEffect(() => {
-    if (user && role) {
-      if (role === "admin" || role === "manager") {
-        navigate("/menu-editor", { replace: true });
-      } else if (role === "staff") {
-        // You may want to fetch the correct restaurantId for the staff user
-        // For now, redirect to a generic orders page
-        navigate("/restaurant/your-restaurant-id/orders", { replace: true });
+    const redirectStaff = async () => {
+      if (user && role) {
+        if (role === "admin" || role === "manager") {
+          navigate("/menu-editor", { replace: true });
+        } else if (role === "staff") {
+          // Fetch the correct restaurantId(s) for the staff user
+          const restaurantIds = await getStaffRestaurants();
+          if (restaurantIds.length > 0) {
+            navigate(`/restaurant/${restaurantIds[0]}/orders`, { replace: true });
+          } else {
+            toast.error("No restaurant found for this staff user.");
+          }
+        }
       }
-    }
+    };
+    redirectStaff();
   }, [user, role, navigate]);
 
   return (

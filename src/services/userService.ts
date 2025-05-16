@@ -15,7 +15,7 @@ export const addRestaurantUser = async (email: string, role: UserRole, restauran
   try {
     // First check if user already exists
     const { data: existingUser, error: checkError } = await supabase
-      .from('restaurant_users')
+      .from('app_users')
       .select('*')
       .eq('email', email)
       .eq('restaurant_id', restaurantId)
@@ -32,7 +32,7 @@ export const addRestaurantUser = async (email: string, role: UserRole, restauran
 
     // Add new user
     const { data, error } = await supabase
-      .from('restaurant_users')
+      .from('app_users')
       .insert({
         email,
         role,
@@ -58,7 +58,7 @@ export const addRestaurantUser = async (email: string, role: UserRole, restauran
 export const updateRestaurantUserRole = async (userId: string, newRole: UserRole) => {
   try {
     const { data, error } = await supabase
-      .from('restaurant_users')
+      .from('app_users')
       .update({ role: newRole })
       .eq('id', userId)
       .select()
@@ -80,7 +80,7 @@ export const updateRestaurantUserRole = async (userId: string, newRole: UserRole
 export const deleteRestaurantUser = async (userId: string) => {
   try {
     const { error } = await supabase
-      .from('restaurant_users')
+      .from('app_users')
       .delete()
       .eq('id', userId);
 
@@ -100,7 +100,7 @@ export const deleteRestaurantUser = async (userId: string) => {
 export const getRestaurantUsers = async (restaurantId: string) => {
   try {
     const { data, error } = await supabase
-      .from('restaurant_users')
+      .from('app_users')
       .select('*')
       .eq('restaurant_id', restaurantId)
       .order('created_at', { ascending: false });
@@ -115,4 +115,15 @@ export const getRestaurantUsers = async (restaurantId: string) => {
     toast.error(error.message || 'Failed to fetch users');
     return [];
   }
+};
+
+export const getStaffRestaurants = async (): Promise<string[]> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+  const { data, error } = await supabase
+    .from('app_users')
+    .select('restaurant_id')
+    .eq('auth_user_id', user.id);
+  if (error) return [];
+  return data.map((row: any) => row.restaurant_id);
 }; 
