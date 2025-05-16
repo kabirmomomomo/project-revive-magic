@@ -1,6 +1,5 @@
-
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -32,13 +31,14 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 const Login = () => {
-  const { signIn, signInWithGoogle } = useAuth();
+  const { signIn, signInWithGoogle, user, role } = useAuth();
   const [isHoveringButton, setIsHoveringButton] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showResetPassword, setShowResetPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
   const [resetLoading, setResetLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const navigate = useNavigate();
 
   const defaultValues: Partial<LoginFormValues> = {
     email: "",
@@ -96,6 +96,18 @@ const Login = () => {
       setResetLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (user && role) {
+      if (role === "admin" || role === "manager") {
+        navigate("/menu-editor", { replace: true });
+      } else if (role === "staff") {
+        // You may want to fetch the correct restaurantId for the staff user
+        // For now, redirect to a generic orders page
+        navigate("/restaurant/your-restaurant-id/orders", { replace: true });
+      }
+    }
+  }, [user, role, navigate]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">

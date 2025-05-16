@@ -741,3 +741,137 @@ export const saveRestaurantMenu = async (restaurant: RestaurantUI) => {
     throw error;
   }
 };
+
+// Fetch only the basic restaurant info
+export const getRestaurantBasicInfo = async (id: string) => {
+  const { data, error } = await supabase
+    .from('restaurants')
+    .select('*')
+    .eq('id', id)
+    .single();
+  if (error) throw error;
+  return data;
+};
+
+// Fetch only the categories for a restaurant
+export const getRestaurantCategories = async (restaurantId: string) => {
+  const { data, error } = await supabase
+    .from('menu_categories')
+    .select('*')
+    .eq('restaurant_id', restaurantId)
+    .order('order', { ascending: true });
+  if (error) throw error;
+  return data;
+};
+
+// Fetch all items for a category (with variants and addons)
+export const getCategoryItems = async (categoryId: string) => {
+  const { data: items, error } = await supabase
+    .from('menu_items')
+    .select('*')
+    .eq('category_id', categoryId)
+    .order('order', { ascending: true });
+  if (error) throw error;
+  if (!items) return [];
+
+  // Fetch variants and addons for each item
+  const itemsWithDetails = await Promise.all(items.map(async (item) => {
+    const [variantsResult, addonMappingsResult] = await Promise.all([
+      supabase
+        .from('menu_item_variants')
+        .select('*')
+        .eq('menu_item_id', item.id)
+        .order('order', { ascending: true }),
+      supabase
+        .from('menu_item_addon_mapping')
+        .select('addon_id')
+        .eq('menu_item_id', item.id)
+    ]);
+
+    const variants = variantsResult.data || [];
+    const addonMappings = addonMappingsResult.data || [];
+    const addons = [];
+    for (const mapping of addonMappings) {
+      const { data: addon } = await supabase
+        .from('menu_item_addons')
+        .select('*')
+        .eq('id', mapping.addon_id)
+        .single();
+      if (addon) {
+        const { data: options } = await supabase
+          .from('menu_addon_options')
+          .select('*')
+          .eq('addon_id', addon.id)
+          .order('order', { ascending: true });
+        addons.push({
+          id: addon.id,
+          title: addon.title,
+          type: addon.type,
+          options: options || [],
+        });
+      }
+    }
+    return {
+      ...item,
+      variants,
+      addons,
+    };
+  }));
+  return itemsWithDetails;
+};
+
+// Fetch all items for a restaurant (with variants and addons)
+export const getAllRestaurantItems = async (restaurantId: string) => {
+  const { data: items, error } = await supabase
+    .from('menu_items')
+    .select('*')
+    .eq('restaurant_id', restaurantId)
+    .order('order', { ascending: true });
+  if (error) throw error;
+  if (!items) return [];
+
+  // Fetch variants and addons for each item
+  const itemsWithDetails = await Promise.all(items.map(async (item) => {
+    const [variantsResult, addonMappingsResult] = await Promise.all([
+      supabase
+        .from('menu_item_variants')
+        .select('*')
+        .eq('menu_item_id', item.id)
+        .order('order', { ascending: true }),
+      supabase
+        .from('menu_item_addon_mapping')
+        .select('addon_id')
+        .eq('menu_item_id', item.id)
+    ]);
+
+    const variants = variantsResult.data || [];
+    const addonMappings = addonMappingsResult.data || [];
+    const addons = [];
+    for (const mapping of addonMappings) {
+      const { data: addon } = await supabase
+        .from('menu_item_addons')
+        .select('*')
+        .eq('id', mapping.addon_id)
+        .single();
+      if (addon) {
+        const { data: options } = await supabase
+          .from('menu_addon_options')
+          .select('*')
+          .eq('addon_id', addon.id)
+          .order('order', { ascending: true });
+        addons.push({
+          id: addon.id,
+          title: addon.title,
+          type: addon.type,
+          options: options || [],
+        });
+      }
+    }
+    return {
+      ...item,
+      variants,
+      addons,
+    };
+  }));
+  return itemsWithDetails;
+};

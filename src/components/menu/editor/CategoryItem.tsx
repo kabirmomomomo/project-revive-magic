@@ -22,6 +22,7 @@ interface CategoryItemProps {
   deleteMenuItem: (categoryId: string, itemId: string) => void;
   setActiveItemId: (id: string | null) => void;
   categoriesLength: number;
+  canEdit?: boolean;
 }
 
 const CategoryItem: React.FC<CategoryItemProps> = ({
@@ -37,9 +38,10 @@ const CategoryItem: React.FC<CategoryItemProps> = ({
   deleteMenuItem,
   setActiveItemId,
   categoriesLength,
+  canEdit = true
 }) => {
   const handleCategoryTypeChange = (value: string) => {
-    console.log(`Changing category type to: ${value}`);
+    if (!canEdit) return;
     updateCategory(category.id, category.name, value as CategoryType);
   };
 
@@ -60,9 +62,10 @@ const CategoryItem: React.FC<CategoryItemProps> = ({
           <Input
             id={`category-${category.id}`}
             value={category.name}
-            onChange={(e) => updateCategory(category.id, e.target.value, category.type)}
+            onChange={(e) => canEdit && updateCategory(category.id, e.target.value, category.type)}
             className="h-8 text-sm md:text-base"
             placeholder="Category Name"
+            disabled={!canEdit}
           />
         </div>
         
@@ -70,6 +73,7 @@ const CategoryItem: React.FC<CategoryItemProps> = ({
           <Select 
             value={category.type || "all"} 
             onValueChange={handleCategoryTypeChange}
+            disabled={!canEdit}
           >
             <SelectTrigger className="h-8 w-24 md:w-28">
               <SelectValue placeholder="Type" />
@@ -87,7 +91,7 @@ const CategoryItem: React.FC<CategoryItemProps> = ({
             variant="ghost"
             size="icon"
             onClick={() => moveCategory(categoryIndex, "up")}
-            disabled={categoryIndex === 0}
+            disabled={categoryIndex === 0 || !canEdit}
             className="h-7 w-7"
           >
             <MoveUp className="h-3 w-3 md:h-4 md:w-4" />
@@ -96,7 +100,7 @@ const CategoryItem: React.FC<CategoryItemProps> = ({
             variant="ghost"
             size="icon"
             onClick={() => moveCategory(categoryIndex, "down")}
-            disabled={categoryIndex === categoriesLength - 1}
+            disabled={categoryIndex === categoriesLength - 1 || !canEdit}
             className="h-7 w-7"
           >
             <MoveDown className="h-3 w-3 md:h-4 md:w-4" />
@@ -106,6 +110,7 @@ const CategoryItem: React.FC<CategoryItemProps> = ({
             size="icon"
             onClick={() => deleteCategory(category.id)}
             className="h-7 w-7 text-destructive hover:text-destructive"
+            disabled={!canEdit}
           >
             <Trash2 className="h-3 w-3 md:h-4 md:w-4" />
           </Button>
@@ -118,16 +123,18 @@ const CategoryItem: React.FC<CategoryItemProps> = ({
           <div className="space-y-2">
             <div className="flex justify-between items-center">
               <h3 className="text-sm md:text-base font-medium">Menu Items</h3>
-              <Button
-                onClick={() => addMenuItem(category.id)}
-                size="sm"
-                variant="outline"
-                className="h-7 gap-1 text-xs md:text-sm"
-              >
-                <PlusCircle className="h-3 w-3 md:h-4 md:w-4" />
-                <span className="hidden md:inline">Add Item</span>
-                <span className="md:hidden">Add</span>
-              </Button>
+              {canEdit && (
+                <Button
+                  onClick={() => addMenuItem(category.id)}
+                  size="sm"
+                  variant="outline"
+                  className="h-7 gap-1 text-xs md:text-sm"
+                >
+                  <PlusCircle className="h-3 w-3 md:h-4 md:w-4" />
+                  <span className="hidden md:inline">Add Item</span>
+                  <span className="md:hidden">Add</span>
+                </Button>
+              )}
             </div>
 
             {category.items.length === 0 ? (
@@ -144,6 +151,7 @@ const CategoryItem: React.FC<CategoryItemProps> = ({
                 moveMenuItem={moveMenuItem} 
                 deleteMenuItem={deleteMenuItem} 
                 setActiveItemId={setActiveItemId} 
+                canEdit={canEdit}
               />
             )}
           </div>
@@ -160,6 +168,7 @@ interface CategoryItemsListProps {
   moveMenuItem: (categoryIndex: number, itemIndex: number, direction: "up" | "down") => void;
   deleteMenuItem: (categoryId: string, itemId: string) => void;
   setActiveItemId: (id: string | null) => void;
+  canEdit?: boolean;
 }
 
 const CategoryItemsList: React.FC<CategoryItemsListProps> = ({
@@ -169,6 +178,7 @@ const CategoryItemsList: React.FC<CategoryItemsListProps> = ({
   moveMenuItem,
   deleteMenuItem,
   setActiveItemId,
+  canEdit = true
 }) => {
   return (
     <div className="space-y-2">
@@ -192,14 +202,24 @@ const CategoryItemsList: React.FC<CategoryItemsListProps> = ({
                 size="icon"
                 onClick={() => setActiveItemId(item.id)}
                 className="h-7 w-7"
+                disabled={!canEdit}
               >
                 <Pencil className="h-3 w-3 md:h-4 md:w-4" />
               </Button>
               <Button
                 variant="ghost"
                 size="icon"
+                onClick={() => deleteMenuItem(categoryId, item.id)}
+                className="h-7 w-7 text-destructive hover:text-destructive"
+                disabled={!canEdit}
+              >
+                <Trash2 className="h-3 w-3 md:h-4 md:w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={() => moveMenuItem(categoryIndex, itemIndex, "up")}
-                disabled={itemIndex === 0}
+                disabled={itemIndex === 0 || !canEdit}
                 className="h-7 w-7"
               >
                 <MoveUp className="h-3 w-3 md:h-4 md:w-4" />
@@ -208,18 +228,10 @@ const CategoryItemsList: React.FC<CategoryItemsListProps> = ({
                 variant="ghost"
                 size="icon"
                 onClick={() => moveMenuItem(categoryIndex, itemIndex, "down")}
-                disabled={itemIndex === items.length - 1}
+                disabled={itemIndex === items.length - 1 || !canEdit}
                 className="h-7 w-7"
               >
                 <MoveDown className="h-3 w-3 md:h-4 md:w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => deleteMenuItem(categoryId, item.id)}
-                className="h-7 w-7 text-destructive hover:text-destructive"
-              >
-                <Trash2 className="h-3 w-3 md:h-4 md:w-4" />
               </Button>
             </div>
           </div>

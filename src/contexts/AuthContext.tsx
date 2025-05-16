@@ -8,6 +8,7 @@ interface AuthContextType {
   session: Session | null;
   user: User | null;
   loading: boolean;
+  role: string | null;
   supabase: typeof supabase;
   signUp: (email: string, password: string, name: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
@@ -20,14 +21,40 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+
+  // Helper to fetch user role from app_users
+  const fetchUserRole = async (authUserId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('app_users')
+        .select('role')
+        .eq('auth_user_id', authUserId)
+        .single();
+      if (error) {
+        console.error('Error fetching user role:', error);
+        setRole(null);
+        return;
+      }
+      setRole(data?.role || null);
+    } catch (err) {
+      console.error('Error fetching user role:', err);
+      setRole(null);
+    }
+  };
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       console.log('Initial session check:', session ? 'Logged in' : 'No session');
       setSession(session);
       setUser(session?.user ?? null);
+      if (session?.user?.id) {
+        fetchUserRole(session.user.id);
+      } else {
+        setRole(null);
+      }
       setLoading(false);
     }).catch(error => {
       console.error('Error getting session:', error);
@@ -38,6 +65,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('Auth state changed:', event, session ? 'Has session' : 'No session');
       setSession(session);
       setUser(session?.user ?? null);
+      if (session?.user?.id) {
+        fetchUserRole(session.user.id);
+      } else {
+        setRole(null);
+      }
       setLoading(false);
     });
 
@@ -104,9 +136,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw error;
       }
       
-      console.log('Login successful:', data.user?.id);
+      setSession(data.session);
+      setUser(data.user ?? null);
+      if (data.user?.id) {
+        await fetchUserRole(data.user.id);
+      } else {
+        setRole(null);
+      }
       toast.success("Login successful!");
-      navigate('/menu-editor');
     } catch (error) {
       console.error('Error signing in:', error);
       
@@ -191,6 +228,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       session, 
       user, 
       loading, 
+      role,
       supabase,
       signUp, 
       signIn,

@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -17,6 +16,7 @@ import { OrderProvider } from "./contexts/OrderContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ThankYou from "./pages/ThankYou";
 import PaymentPage from "./pages/PaymentPage";
+import RoleProtectedRoute from "./components/RoleProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -33,9 +33,9 @@ const App = () => (
           <Route 
             path="/menu-editor" 
             element={
-              <ProtectedRoute>
+              <RoleProtectedRoute allowedRoles={["admin", "manager"]}>
                 <MenuEditor />
-              </ProtectedRoute>
+              </RoleProtectedRoute>
             } 
           />
           <Route 
@@ -72,11 +72,13 @@ const App = () => (
           <Route 
             path="/restaurant/:restaurantId/orders" 
             element={
-              <CartProvider>
-                <OrderProvider>
-                  <OrderDashboard />
-                </OrderProvider>
-              </CartProvider>
+              <RoleProtectedRoute allowedRoles={["staff", "admin", "manager"]}>
+                <CartProvider>
+                  <OrderProvider>
+                    <OrderDashboard />
+                  </OrderProvider>
+                </CartProvider>
+              </RoleProtectedRoute>
             } 
           />
           <Route path="*" element={<NotFound />} />

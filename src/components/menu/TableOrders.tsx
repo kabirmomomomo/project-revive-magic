@@ -162,13 +162,23 @@ const TableOrders = () => {
               {sessionOrders.map((order) => (
                 <div key={order.id} className="py-3 animate-fade-in">
                   <div className="flex justify-between mb-1">
-                    <div className="text-sm font-medium text-purple-900 flex items-center gap-1">
+                    <div className="text-sm font-medium text-purple-900 flex items-center gap-2">
                       <Smartphone className="h-3 w-3" />
                       {order.user_name ? (
                         <span className="font-semibold">{order.user_name}</span>
                       ) : (
                         <span className="text-gray-500">Guest ({order.device_id.substring(0, 6)}...)</span>
                       )}
+                      <Badge
+                        className={`text-xs ${
+                          order.status === 'placed' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+                          order.status === 'preparing' ? 'bg-amber-100 text-amber-800 border-amber-200' :
+                          order.status === 'ready' ? 'bg-green-100 text-green-800 border-green-200' :
+                          'bg-gray-100 text-gray-800 border-gray-200'
+                        }`}
+                      >
+                        {order.status}
+                      </Badge>
                     </div>
                     <div className="text-xs text-muted-foreground">
                       {format(new Date(order.created_at), 'h:mm a')}

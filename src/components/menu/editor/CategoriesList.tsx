@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
@@ -18,6 +17,7 @@ interface CategoriesListProps {
   deleteMenuItem: (categoryId: string, itemId: string) => void;
   setActiveItemId: (id: string | null) => void;
   addCategory: () => void;
+  canEdit?: boolean;
 }
 
 const CategoriesList: React.FC<CategoriesListProps> = ({
@@ -31,22 +31,25 @@ const CategoriesList: React.FC<CategoriesListProps> = ({
   moveMenuItem,
   deleteMenuItem,
   setActiveItemId,
-  addCategory
+  addCategory,
+  canEdit = true
 }) => {
   return (
     <div className="space-y-2">
       <div className="flex justify-between items-center">
         <h2 className="text-base md:text-lg font-semibold">Menu Categories</h2>
-        <Button 
-          onClick={addCategory} 
-          variant="outline" 
-          size="sm" 
-          className="h-7 px-2 md:px-3 gap-1"
-        >
-          <PlusCircle className="h-3 w-3 md:h-4 md:w-4" />
-          <span className="hidden md:inline">Add Category</span>
-          <span className="md:hidden">Add</span>
-        </Button>
+        {canEdit && (
+          <Button 
+            onClick={addCategory} 
+            variant="outline" 
+            size="sm" 
+            className="h-7 px-2 md:px-3 gap-1"
+          >
+            <PlusCircle className="h-3 w-3 md:h-4 md:w-4" />
+            <span className="hidden md:inline">Add Category</span>
+            <span className="md:hidden">Add</span>
+          </Button>
+        )}
       </div>
 
       {categories.length === 0 ? (
@@ -72,6 +75,7 @@ const CategoriesList: React.FC<CategoriesListProps> = ({
               deleteMenuItem={deleteMenuItem}
               setActiveItemId={setActiveItemId}
               categoriesLength={categories.length}
+              canEdit={canEdit}
             />
           ))}
         </div>

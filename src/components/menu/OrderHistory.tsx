@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Clock, ChevronDown, ChevronUp, Smartphone, Receipt, Users, Table, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import { useOrders } from '@/contexts/OrderContext';
@@ -127,7 +127,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ tableId }) => {
       if (sessionCode) {
         await fetchSessionOrders(menuId, sessionCode);
       }
-      toast.success('Orders refreshed successfully');
+      // toast.success('Orders refreshed successfully');
     } catch (error) {
       console.error('Error refreshing orders:', error);
       toast.error('Failed to refresh orders');
@@ -150,6 +150,13 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ tableId }) => {
 
   const hasOrders = filteredOrders.length > 0;
   const hasTableOrders = tableOrders.length > 0;
+
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      handleRefresh();
+    }, 10000);
+    return () => clearInterval(intervalId);
+  }, [handleRefresh]);
 
   return (
     <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>

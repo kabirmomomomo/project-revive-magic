@@ -1,8 +1,12 @@
 import React from "react";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { getRestaurantById } from "@/services/menuService";
+import { useQuery, useQueries } from "@tanstack/react-query";
+import { 
+  getRestaurantBasicInfo, 
+  getRestaurantCategories, 
+  getAllRestaurantItems 
+} from "@/services/menuService";
 import { setupDatabase, handleRelationDoesNotExistError } from "@/lib/setupDatabase";
 import { supabase } from "@/integrations/supabase/client";
 import { CategoryType, Restaurant } from "@/types/menu";
@@ -63,168 +67,171 @@ const MenuPreview = () => {
   const tableId = searchParams.get('table');
   const [attemptedDatabaseSetup, setAttemptedDatabaseSetup] = useState(false);
   const [isDbError, setIsDbError] = useState(false);
-  const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({});
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<CategoryType>("all");
   const isMobile = useIsMobile();
+  
+  // Performance monitoring
+  const [loadStartTime] = useState(() => performance.now());
   
   // New state for bill selection dialog
   const [showBillDialog, setShowBillDialog] = useState(false);
   const [sessionCode, setSessionCode] = useState<string | null>(null);
   const [isSessionOwner, setIsSessionOwner] = useState(false);
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
-  // Optimize query with better caching and error handling
-  const { data: restaurant, isLoading, error, refetch } = useQuery({
-    queryKey: ['restaurant', menuId],
-    queryFn: async () => {
-      if (!menuId) return null;
-      
-      try {
-        console.log("Attempting to fetch restaurant with ID:", menuId);
-        
-        // Check if database connection is available
-        try {
-          const { data, error } = await supabase.from('restaurants').select('id').limit(1);
-          if (error) {
-            console.log("Supabase connection test failed:", error);
-            setIsDbError(true);
-            throw new Error("Database connection failed");
-          }
-        } catch (e) {
-          console.log("Supabase connection test error:", e);
-          setIsDbError(true);
-          throw new Error("Database connection failed");
-        }
-        
-        // Attempt to fetch the restaurant data
-        const restaurantData = await getRestaurantById(menuId);
-        
-        if (!restaurantData) {
-          console.log("Restaurant not found in database:", menuId);
-          return null;
-        }
-        
-        console.log("Successfully fetched restaurant from database:", restaurantData);
-        return restaurantData;
-      } catch (error: any) {
-        // If we get a "relation does not exist" error, try to set up the database
-        if (!attemptedDatabaseSetup) {
-          const success = await handleRelationDoesNotExistError(error);
-          setAttemptedDatabaseSetup(true);
-          
-          if (success) {
-            console.log("Database tables created, retrying fetch...");
-            return await getRestaurantById(menuId);
-          }
-        }
-        
-        console.log("Database fetch failed:", error);
-        setIsDbError(true);
-        throw error;
-      }
-    },
-    retry: 1, // Reduce retry attempts
-    staleTime: 60000, // Cache results for 1 minute to reduce refetching
-    gcTime: 300000, // Keep unused data in cache for 5 minutes (renamed from cacheTime)
+  // Load basic restaurant info first
+  const { data: basicInfo, isLoading: isLoadingBasicInfo } = useQuery({
+    queryKey: ['restaurant-basic', menuId],
+    queryFn: () => getRestaurantBasicInfo(menuId!),
     enabled: !!menuId,
   });
 
-  // Memoize restaurant data to prevent unnecessary rerenders
-  const restaurantToDisplay = useMemo(() => 
-    restaurant || (menuId === "sample-restaurant" ? sampleData : null),
-  [restaurant, menuId]);
+  // Load categories after basic info
+  const { data: categories, isLoading: isLoadingCategories } = useQuery({
+    queryKey: ['restaurant-categories', menuId],
+    queryFn: () => getRestaurantCategories(menuId!),
+    enabled: !!basicInfo,
+  });
 
-  // Check if orders are enabled for the restaurant
-  const isOrderingEnabled = useMemo(() => 
-    restaurantToDisplay?.ordersEnabled !== false,
-  [restaurantToDisplay]);
+  // Load items for expanded categories
+  const categoryQueries = useQueries({
+    queries: categories?.map(category => ({
+      queryKey: ['category-items', category.id],
+      queryFn: () => getCategoryItems(category.id),
+      enabled: true,
+      staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    })) || [],
+  });
 
-  // Initialize all categories as collapsed by default
-  useEffect(() => {
-    if (restaurantToDisplay && restaurantToDisplay.categories.length > 0) {
-      const initialOpenState: Record<string, boolean> = {};
-      restaurantToDisplay.categories.forEach((category) => {
-        initialOpenState[category.id] = false; // All collapsed
-      });
-      setOpenCategories(initialOpenState);
-    }
-  }, [restaurantToDisplay?.categories]);
+  // Load all items for search functionality
+  const { data: allItems } = useQuery({
+    queryKey: ['all-items', menuId],
+    queryFn: () => getAllRestaurantItems(menuId!),
+    enabled: !!basicInfo,
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+  });
 
-  // Toggle category open/closed state - optimized with useCallback
+  // Memoize the complete restaurant data
+  const restaurantToDisplay = useMemo(() => {
+    if (!basicInfo || !categories) return null;
+
+    return {
+      ...basicInfo,
+      ordersEnabled: basicInfo.orders_enabled,
+      categories: categories.map((category, idx) => {
+        const categoryItems = categoryQueries[idx]?.data || [];
+        return {
+          ...category,
+          items: categoryItems.map(item => ({
+            id: item.id,
+            name: item.name,
+            description: item.description,
+            price: item.price,
+            image_url: item.image_url,
+            is_available: item.is_available,
+            is_visible: item.is_visible,
+            order: item.order,
+            dietary_type: item.dietary_type,
+            weight: item.weight,
+            old_price: item.old_price,
+            variants: item.menu_item_variants || [],
+            addons: (item.menu_item_addon_mapping || []).map(mapping => {
+              const addon: any = mapping.menu_item_addons;
+              if (!addon || Array.isArray(addon)) return null;
+              return {
+                id: addon.id,
+                title: addon.title,
+                type: addon.type,
+                options: addon.menu_addon_options || []
+              };
+            }).filter(Boolean)
+          }))
+        };
+      })
+    };
+  }, [basicInfo, categories, categoryQueries]);
+
+  // Convert Set to Record for compatibility
+  const openCategoriesRecord = useMemo(() => {
+    const record: Record<string, boolean> = {};
+    expandedCategories.forEach(id => {
+      record[id] = true;
+    });
+    return record;
+  }, [expandedCategories]);
+
+  // Handle category expansion
   const toggleCategory = useCallback((categoryId: string) => {
-    setOpenCategories(prev => ({
-      ...prev,
-      [categoryId]: !prev[categoryId]
-    }));
+    setExpandedCategories(prev => {
+      const next = new Set(prev);
+      if (next.has(categoryId)) {
+        next.delete(categoryId);
+      } else {
+        next.add(categoryId);
+      }
+      return next;
+    });
   }, []);
 
-  // Handle search query changes - optimized with useCallback
+  // Handle search
   const handleSearch = useCallback((query: string) => {
     setSearchQuery(query);
     
-    // If there's a search query, open all categories
-    if (query.trim() !== "") {
-      if (restaurantToDisplay) {
-        const allOpen: Record<string, boolean> = {};
-        restaurantToDisplay.categories.forEach(category => {
-          allOpen[category.id] = true;
-        });
-        setOpenCategories(allOpen);
-      }
+    if (query.trim() !== "" && categories) {
+      // Expand all categories when searching
+      setExpandedCategories(new Set(categories.map(c => c.id)));
     }
-  }, [restaurantToDisplay]);
+  }, [categories]);
 
-  // Handle tab changes
+  // Memoize tab change handler
   const handleTabChange = useCallback((tab: CategoryType) => {
     setActiveTab(tab);
     setSearchQuery("");
   }, []);
 
-  // Retry setup if there's an error
-  useEffect(() => {
-    let mounted = true;
-    
-    if (isDbError && !attemptedDatabaseSetup) {
-      setupDatabase().then(success => {
-        if (mounted) {
-          setAttemptedDatabaseSetup(true);
-          if (success) {
-            refetch();
-          }
-        }
-      });
-    }
-    
-    return () => { mounted = false; };
-  }, [isDbError, attemptedDatabaseSetup, refetch]);
-  
   // Memoize QR code value
   const qrCodeValue = useMemo(() => {
     if (!restaurantToDisplay) return '';
     
-    // Include table ID in QR code if available
     const baseUrl = `${window.location.origin}/menu-preview/${restaurantToDisplay.id}`;
     
-    // Add the session code if we have one
     if (sessionCode && tableId) {
       return `${baseUrl}?table=${tableId}&sessionCode=${sessionCode}`;
     }
     
     return tableId ? `${baseUrl}?table=${tableId}` : baseUrl;
   }, [restaurantToDisplay, tableId, sessionCode]);
-  
-  // Check if we have a table ID to enable table features
-  const isTableContext = !!tableId;
-  
-  // Check for existing session or initialize bill selection on first load
+
+  // Memoize isOrderingEnabled
+  const isOrderingEnabled = useMemo(() => 
+    restaurantToDisplay?.ordersEnabled !== false,
+  [restaurantToDisplay]);
+
+  // Memoize isTableContext
+  const isTableContext = useMemo(() => !!tableId, [tableId]);
+
+  // Performance monitoring effect
+  useEffect(() => {
+    if (!isLoadingBasicInfo && !isLoadingCategories && basicInfo && categories) {
+      const loadEndTime = performance.now();
+      const totalLoadTime = (loadEndTime - loadStartTime) / 1000;
+      console.log(`MenuPreview initial load time: ${totalLoadTime.toFixed(2)} seconds`);
+      console.log('Load time breakdown:', {
+        totalTime: `${totalLoadTime.toFixed(2)}s`,
+        basicInfo: basicInfo ? 'Loaded' : 'Not loaded',
+        categories: categories?.length || 0,
+        expandedCategories: expandedCategories.size,
+      });
+    }
+  }, [isLoadingBasicInfo, isLoadingCategories, basicInfo, categories, loadStartTime, expandedCategories]);
+
+  // Check for existing session or initialize bill selection
   useEffect(() => {
     if (tableId && restaurantToDisplay) {
-      // Check if we have a session code in URL params (joining a friend)
       const urlSessionCode = searchParams.get('sessionCode');
       
-      // First check URL for session code
       if (urlSessionCode) {
-        // Look up this session in the database
         supabase
           .from("bill_sessions")
           .select("*")
@@ -234,7 +241,6 @@ const MenuPreview = () => {
           .single()
           .then(({ data, error }) => {
             if (data && !error) {
-              // Store this in localStorage
               localStorage.setItem("billSessionId", data.id);
               localStorage.setItem("billSessionCode", data.code);
               localStorage.setItem("billSessionOwner", "false");
@@ -243,24 +249,22 @@ const MenuPreview = () => {
               setSessionCode(data.code);
               setIsSessionOwner(false);
             } else {
-              // If session is invalid or expired, show the dialog
               setShowBillDialog(true);
             }
           });
       } else {
-        // Always show the dialog if no session code in URL
         setShowBillDialog(true);
       }
     }
   }, [tableId, restaurantToDisplay, searchParams]);
-  
-  // Show loading state
-  if (isLoading) {
+
+  // Show loading state for initial load
+  if (isLoadingBasicInfo || isLoadingCategories) {
     return <LoadingAnimation />;
   }
 
-  // Show not found state if we don't have data and we're not loading
-  if (!isLoading && !restaurant && menuId !== "sample-restaurant") {
+  // Show not found state
+  if (!isLoadingBasicInfo && !basicInfo && menuId !== "sample-restaurant") {
     return (
       <ErrorState 
         message="Menu not found" 
@@ -270,8 +274,7 @@ const MenuPreview = () => {
   }
 
   // Show error
-  if (error && menuId !== "sample-restaurant") {
-    console.error("Error loading menu:", error);
+  if (isDbError && menuId !== "sample-restaurant") {
     return (
       <ErrorState 
         message="Could not load menu from database." 
@@ -281,7 +284,7 @@ const MenuPreview = () => {
   }
 
   if (!restaurantToDisplay) {
-    return null; // Should never happen, but TypeScript wants this check
+    return null;
   }
 
   return (
@@ -313,9 +316,9 @@ const MenuPreview = () => {
           <div className={isMobile ? "px-2" : "px-6"}>
             <SearchBar onSearch={handleSearch} />
             
-            <MenuList 
-              categories={restaurantToDisplay.categories} 
-              openCategories={openCategories} 
+            <MenuList
+              categories={restaurantToDisplay.categories}
+              openCategories={openCategoriesRecord}
               toggleCategory={toggleCategory}
               searchQuery={searchQuery}
               activeTab={activeTab}
@@ -323,10 +326,8 @@ const MenuPreview = () => {
             />
             
             {!isOrderingEnabled && (
-              <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg shadow-sm mt-4 mb-2 text-center">
-                <p className="text-yellow-700 text-sm">
-                  Online ordering is currently disabled by the restaurant. You can still browse the menu.
-                </p>
+              <div className="mt-4 text-center text-muted-foreground">
+                <p>Ordering is currently disabled for this restaurant.</p>
               </div>
             )}
           </div>
@@ -341,11 +342,10 @@ const MenuPreview = () => {
 
           <CategoryNavigationDialog
             categories={restaurantToDisplay.categories}
-            openCategories={openCategories}
+            openCategories={openCategoriesRecord}
             toggleCategory={toggleCategory}
           />
           
-          {/* Show the session code if we have one */}
           {sessionCode && (
             <SessionCodeDisplay />
           )}
@@ -366,8 +366,7 @@ const MenuPreview = () => {
           />
         )}
         
-        {/* Bill selection dialog */}
-        {tableId && restaurantToDisplay && (
+        {tableId && restaurantToDisplay && isOrderingEnabled && (
           <BillSelectionDialog
             open={showBillDialog}
             onOpenChange={setShowBillDialog}

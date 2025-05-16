@@ -12,6 +12,7 @@
   import { toast } from '@/components/ui/sonner';
   import OrderBill from '@/components/menu/OrderBill';
   import WaiterCallsList from '@/components/menu/WaiterCallsList';
+  import { useAuth } from "@/contexts/AuthContext";
 
   interface OrderItem {
     id: string;
@@ -41,6 +42,7 @@
     const [error, setError] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState('all');
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const { role } = useAuth();
 
     useEffect(() => {
       if (!restaurantId) return;
@@ -426,38 +428,42 @@
                                   </Badge>
                                 </TableCell>
                                 <TableCell>
-                                  <div className="flex gap-1">
-                                    {order.status === 'placed' && (
-                                      <Button 
-                                        size="sm" 
-                                        variant="outline" 
-                                        onClick={() => updateOrderStatus(order.id, 'preparing')}
-                                        className="h-6 text-xs bg-amber-50 hover:bg-amber-100 border-amber-200"
-                                      >
-                                        <Utensils className="h-3 w-3 mr-1" /> Prepare
-                                      </Button>
-                                    )}
-                                    {order.status === 'preparing' && (
-                                      <Button 
-                                        size="sm" 
-                                        variant="outline" 
-                                        onClick={() => updateOrderStatus(order.id, 'ready')}
-                                        className="h-6 text-xs bg-green-50 hover:bg-green-100 border-green-200"
-                                      >
-                                        <CheckCircle className="h-3 w-3 mr-1" /> Ready
-                                      </Button>
-                                    )}
-                                    {order.status === 'ready' && (
-                                      <Button 
-                                        size="sm" 
-                                        variant="outline" 
-                                        onClick={() => updateOrderStatus(order.id, 'completed')}
-                                        className="h-6 text-xs bg-gray-50 hover:bg-gray-100 border-gray-200"
-                                      >
-                                        <Package className="h-3 w-3 mr-1" /> Complete
-                                      </Button>
-                                    )}
-                                  </div>
+                                  {role === 'staff' ? (
+                                    <span className="text-xs text-gray-400">No actions</span>
+                                  ) : (
+                                    <div className="flex gap-1">
+                                      {order.status === 'placed' && (
+                                        <Button 
+                                          size="sm" 
+                                          variant="outline" 
+                                          onClick={() => updateOrderStatus(order.id, 'preparing')}
+                                          className="h-6 text-xs bg-amber-50 hover:bg-amber-100 border-amber-200"
+                                        >
+                                          <Utensils className="h-3 w-3 mr-1" /> Prepare
+                                        </Button>
+                                      )}
+                                      {order.status === 'preparing' && (
+                                        <Button 
+                                          size="sm" 
+                                          variant="outline" 
+                                          onClick={() => updateOrderStatus(order.id, 'ready')}
+                                          className="h-6 text-xs bg-green-50 hover:bg-green-100 border-green-200"
+                                        >
+                                          <CheckCircle className="h-3 w-3 mr-1" /> Ready
+                                        </Button>
+                                      )}
+                                      {order.status === 'ready' && (
+                                        <Button 
+                                          size="sm" 
+                                          variant="outline" 
+                                          onClick={() => updateOrderStatus(order.id, 'completed')}
+                                          className="h-6 text-xs bg-gray-50 hover:bg-gray-100 border-gray-200"
+                                        >
+                                          <Package className="h-3 w-3 mr-1" /> Complete
+                                        </Button>
+                                      )}
+                                    </div>
+                                  )}
                                 </TableCell>
                               </TableRow>
                             ))

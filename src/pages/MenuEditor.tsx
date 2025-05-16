@@ -42,7 +42,7 @@ const EditorHeader = lazy(() => import('@/components/menu/editor/EditorHeader'))
 
 const MenuEditor = () => {
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user, signOut, role } = useAuth();
   const [restaurant, setRestaurant] = useState<RestaurantUI>({
     id: "",
     name: "My Restaurant",
@@ -750,6 +750,7 @@ const MenuEditor = () => {
           handleSaveRestaurantDetails={handleSaveRestaurantDetails}
           signOut={signOut}
           isSaving={saveMenuMutation.isPending}
+          showUserManagement={role === 'admin'}
         />
       </Suspense>
 
@@ -774,6 +775,7 @@ const MenuEditor = () => {
               deleteMenuItem={deleteMenuItem}
               setActiveItemId={setActiveItemId}
               addCategory={addCategory}
+              canEdit={role === 'admin' || role === 'manager'}
             />
           </Suspense>
         </div>
