@@ -103,12 +103,12 @@ const Signup = () => {
           
           <Link to="/" className="inline-block">
             <h2 className="font-mono text-4xl font-semibold text-gray-800">
-              Easy<span className="font-medium text-blue-600">Menu</span>
+            Dine<span className="font-medium text-blue-600">Tree</span>
             </h2>
           </Link>
           <h1 className="mt-4 text-2xl font-bold text-gray-800">Create an account</h1>
           <p className="mt-2 text-gray-600">
-            Sign up to get started with EasyMenu
+            Sign up to get started with DineTree
           </p>
         </div>
 

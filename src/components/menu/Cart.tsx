@@ -44,7 +44,7 @@ const Cart: React.FC<CartProps> = ({ tableId, sessionId, sessionCode, isSessionO
         <Button 
           variant="outline" 
           size="icon" 
-          className="fixed bottom-8 right-8 h-16 w-16 rounded-full shadow-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white border-none pulse-animation z-50"
+          className="fixed bottom-4 right-2 h-14 w-14 rounded-full shadow-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white border-none pulse-animation z-50"
         >
           <ShoppingCart className="h-6 w-6 float-animation" />
           {getItemCount() > 0 && (
