@@ -47,7 +47,7 @@ const CategoryNavigationDialog: React.FC<CategoryNavigationDialogProps> = ({
         variant="outline"
         size="icon"
         className={cn(
-          "h-12 w-12 rounded-full shadow-lg bg-gradient-to-r from-yh  -600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white border-none transition-all duration-300 hover:scale-105",
+          "h-12 w-12 rounded-full shadow-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white border-none transition-all duration-300 hover:scale-105",
           isOpen && "rotate-180"
         )}
         onClick={() => setIsOpen(!isOpen)}
