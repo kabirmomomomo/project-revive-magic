@@ -26,8 +26,8 @@ const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
   closing_time
 }) => {
   return (
-    <div className="text-center mb-6 bg-gradient-to-br from-white to-blue-50 rounded-2xl shadow-md p-4 sm:p-6 border border-blue-100 transform transition-all duration-500 hover:shadow-lg">
-      <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 mb-4">
+    <div className="text-center mb-2 bg-gradient-to-br from-white to-blue-50 rounded-2xl shadow-md p-4 sm:p-6 border border-blue-100 transform transition-all duration-500 hover:shadow-lg">
+      <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-6 mb-1">
         {image_url && (
           <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-lg overflow-hidden flex-shrink-0">
             <img 
@@ -38,10 +38,10 @@ const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
           </div>
         )}
         <div className="flex-1 text-center sm:text-left">
-          <h1 className="text-xl sm:text-3xl font-bold mb-2 bg-gradient-to-r from-blue-900 to-indigo-800 bg-clip-text text-transparent">
+          <h1 className="text-xl sm:text-3xl font-bold mb-0 bg-gradient-to-r from-blue-900 to-indigo-800 bg-clip-text text-transparent">
             {name}
           </h1>
-          <p className="text-xs sm:text-sm text-gray-600 mb-2">{description}</p>
+          <p className="text-xs sm:text-sm text-gray-600 mb-0">{description}</p>
           {google_review_link && (
             <Button
               variant="outline"

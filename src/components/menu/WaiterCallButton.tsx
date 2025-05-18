@@ -99,7 +99,7 @@ const WaiterCallButton: React.FC<WaiterCallButtonProps> = ({ tableId, restaurant
         <Button
           variant="default"
           size="icon"
-          className="fixed top-16 left-4 h-12 w-12 rounded-full shadow-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white border-none z-50"
+          className="fixed top-10 right-4 h-12 w-12 rounded-full shadow-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white border-none z-50"
         >
           <Bell className="h-6 w-6" />
         </Button>

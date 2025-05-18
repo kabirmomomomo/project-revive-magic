@@ -121,28 +121,25 @@ const TableOrders = () => {
   
   return (
     <Card className="w-full bg-gradient-to-br from-purple-50 to-white shadow-md border-purple-100">
-      <CardHeader className="bg-gradient-to-r from-purple-100 to-indigo-50 rounded-t-lg">
-        <div className="flex justify-between items-center">
-          <CardTitle className="text-lg font-bold text-purple-900 flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            Table Orders
-            {sessionCode && (
-              <Badge variant="outline" className="ml-2 bg-purple-100 text-purple-700 border-purple-200">
-                Phone: {sessionCode}
-              </Badge>
-            )}
-          </CardTitle>
-          <Badge variant="outline" className="bg-white text-purple-900 border-purple-200">
-            {displayOrders.length} {displayOrders.length === 1 ? 'Order' : 'Orders'}
-          </Badge>
-        </div>
-        <div className="text-sm text-muted-foreground flex justify-between mt-2">
-          <span className="flex items-center gap-1">
-            <Store className="h-3 w-3" /> Restaurant: {restaurantId ? restaurantId.substring(0, 8) : 'N/A'}
-          </span>
-          <span>{calculateTotalItems(displayOrders)} Items</span>
-        </div>
-      </CardHeader>
+      <CardHeader className="bg-gradient-to-r from-purple-100 to-indigo-50 rounded-t-lg px-2 py-2">
+  <div className="flex items-center justify-between w-full gap-2 flex-wrap">
+    <div className="flex items-center gap-2 min-w-0">
+      <Users className="h-4 w-4 text-purple-500" />
+      <span className="font-bold text-xl text-purple-800 whitespace-nowrap">Table Orders</span>
+      {sessionCode && (
+        <span className="ml-2 px-2 py-0.5 rounded-full bg-purple-100 text-xs text-purple-700 font-medium whitespace-nowrap">
+          Phone: <span className="font-semibold">{sessionCode}</span>
+        </span>
+      )}
+    </div>
+    <div className="flex items-center gap-2 flex-shrink-0">
+      <span className="px-2 py-0.5 rounded-full bg-purple-200 text-xs text-purple-800 font-semibold">
+        {displayOrders.length} Order{displayOrders.length !== 1 && 's'}
+      </span>
+      <span className="text-xs text-gray-500">{calculateTotalItems(displayOrders)} Item{calculateTotalItems(displayOrders) !== 1 && 's'}</span>
+    </div>
+  </div>
+</CardHeader>
       <CardContent className="p-4">
         {Object.entries(ordersBySession).map(([codeOrKey, sessionOrders]) => {
           const isSessionCode = codeOrKey.startsWith('session_');
@@ -151,7 +148,7 @@ const TableOrders = () => {
           return (
             <div key={codeOrKey} className="pt-2 first:pt-0">
               <h3 className="text-sm font-semibold text-purple-900 flex items-center gap-1 mb-2">
-                <FileStack className="h-4 w-4" />
+                <FileStack className="h-3 w-3" />
                 {isSessionCode ? (
                   `Phone: ${sessionCode}`
                 ) : (
