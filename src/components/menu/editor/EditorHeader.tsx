@@ -1,12 +1,13 @@
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Eye, Save, LogOut, Settings, KeyRound, List } from "lucide-react";
+import { Eye, Save, LogOut, Settings, KeyRound, List, Receipt } from "lucide-react";
 import { RestaurantUI } from "@/services/menuService";
 import { useNavigate } from "react-router-dom";
 import RestaurantDetailsDialog from "@/components/menu/RestaurantDetailsDialog";
 import ChangePasswordDialog from "./ChangePasswordDialog";
 import TableQRDialog from "@/components/menu/TableQRDialog";
+import ManualBillGenerator from "./ManualBillGenerator";
 
 interface EditorHeaderProps {
   restaurant: RestaurantUI;
@@ -24,6 +25,10 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
   isSaving,
 }) => {
   const navigate = useNavigate();
+  const [showBillGenerator, setShowBillGenerator] = useState(false);
+
+  // Get all menu items from all categories
+  const allMenuItems = restaurant.categories.flatMap(category => category.items);
 
   return (
     <div className="flex flex-col space-y-4 md:space-y-0 md:flex-row justify-between items-start md:items-center mb-4 md:mb-8">
@@ -34,6 +39,16 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
         </p>
       </div>
       <div className="flex flex-wrap gap-2 w-full md:w-auto">
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 px-2 md:px-3"
+          onClick={() => setShowBillGenerator(true)}
+        >
+          <Receipt className="h-4 w-4" />
+          <span className="hidden md:inline ml-2">Generate Bill</span>
+        </Button>
+
         <RestaurantDetailsDialog 
           restaurant={restaurant}
           onSave={handleSaveRestaurantDetails}
@@ -93,6 +108,13 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
           <span className="hidden md:inline ml-2">Track Orders</span>
         </Button>
       </div>
+
+      <ManualBillGenerator
+        open={showBillGenerator}
+        onOpenChange={setShowBillGenerator}
+        menuItems={allMenuItems}
+        restaurantId={restaurant.id}
+      />
     </div>
   );
 };
