@@ -6,12 +6,13 @@
   import { Badge } from '@/components/ui/badge';
   import { format } from 'date-fns';
   import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-  import { Smartphone, User, Table as TableIcon, Trash2, RefreshCcw, ChevronLeft, List, Clock, Utensils, CheckCircle, Package } from 'lucide-react';
+  import { Smartphone, User, Table as TableIcon, Trash2, RefreshCcw, ChevronLeft, List, Clock, Utensils, CheckCircle, Package, Printer } from 'lucide-react';
   import { Button } from '@/components/ui/button';
   import { Separator } from '@/components/ui/separator';
   import { toast } from '@/components/ui/sonner';
   import OrderBill from '@/components/menu/OrderBill';
   import WaiterCallsList from '@/components/menu/WaiterCallsList';
+  import { printBill } from '@/services/printerService';
 
   interface OrderItem {
     id: string;
@@ -248,6 +249,26 @@
       } finally {
         setIsRefreshing(false);
       }
+    };
+
+    const handlePrintBill = (orders) => {
+      if (!orders || orders.length === 0) return;
+      const billData = {
+        id: orders[0].id,
+        created_at: orders[0].created_at,
+        items: orders.flatMap(order => order.items.map(item => ({
+          id: item.id,
+          name: item.item_name,
+          price: item.price,
+          quantity: item.quantity,
+          variant_name: item.variant_name
+        }))),
+        total_amount: orders.reduce((sum, order) => sum + Number(order.total_amount), 0),
+        customer_name: orders[0].user_name || 'Guest',
+        customer_phone: orders[0].session_code || '',
+        restaurantName: orders[0].restaurant_id // or fetch the name if available
+      };
+      printBill(billData);
     };
 
     const filteredOrders = orders.filter(order => {
@@ -536,6 +557,15 @@
                               <Badge className="bg-purple-100 text-purple-800">
                                 {tableOrders.length} Orders
                               </Badge>
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="text-purple-700 border-purple-200"
+                                onClick={() => handlePrintBill(tableOrders)}
+                                title="Print Bill"
+                              >
+                                <Printer className="h-4 w-4" />
+                              </Button>
                               <Button 
                                 variant="outline" 
                                 size="sm"

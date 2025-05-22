@@ -18,7 +18,7 @@ export const sendBillSMS = async (
   restaurantName: string
 ): Promise<SMSResponse> => {
   try {
-    const response = await fetch('/api/send-sms', {
+    const response = await fetch('http://localhost:3001/api/send-sms', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -3,7 +3,9 @@ import { format } from 'date-fns';
 import { useOrders } from '@/contexts/OrderContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Smartphone, Users, Store, FileStack } from 'lucide-react';
+import { Smartphone, Users, Store, FileStack, Printer } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { printBill } from '@/services/printerService';
 
 const TableOrders = () => {
   const { tableOrders, sessionOrders } = useOrders();
@@ -119,27 +121,55 @@ const TableOrders = () => {
     return orders.reduce((sum, order) => sum + Number(order.total_amount), 0);
   };
   
+  // Handle print bill
+  const handlePrintBill = async (orders: typeof displayOrders) => {
+    if (orders.length === 0) return;
+
+    // Format the orders into a single bill
+    const billData = {
+      id: orders[0].id,
+      created_at: orders[0].created_at,
+      items: orders.flatMap(order => order.items.map(item => ({
+        id: item.id,
+        name: item.item_name,
+        price: item.price,
+        quantity: item.quantity,
+        variant_name: item.variant_name
+      }))),
+      total_amount: calculateTotal(orders),
+      customer_name: orders[0].user_name || 'Guest',
+      customer_phone: orders[0].session_code || '',
+      restaurantName: orders[0].restaurant_id // Using restaurant_id as we don't have restaurant_name
+    };
+
+    try {
+      await printBill(billData);
+    } catch (error) {
+      console.error('Error printing bill:', error);
+    }
+  };
+  
   return (
     <Card className="w-full bg-gradient-to-br from-purple-50 to-white shadow-md border-purple-100">
       <CardHeader className="bg-gradient-to-r from-purple-100 to-indigo-50 rounded-t-lg px-2 py-2">
-  <div className="flex items-center justify-between w-full gap-2 flex-wrap">
-    <div className="flex items-center gap-2 min-w-0">
-      <Users className="h-4 w-4 text-purple-500" />
-      <span className="font-bold text-xl text-purple-800 whitespace-nowrap">Table Orders</span>
-      {sessionCode && (
-        <span className="ml-2 px-2 py-0.5 rounded-full bg-purple-100 text-xs text-purple-700 font-medium whitespace-nowrap">
-          Phone: <span className="font-semibold">{sessionCode}</span>
-        </span>
-      )}
-    </div>
-    <div className="flex items-center gap-2 flex-shrink-0">
-      <span className="px-2 py-0.5 rounded-full bg-purple-200 text-xs text-purple-800 font-semibold">
-        {displayOrders.length} Order{displayOrders.length !== 1 && 's'}
-      </span>
-      <span className="text-xs text-gray-500">{calculateTotalItems(displayOrders)} Item{calculateTotalItems(displayOrders) !== 1 && 's'}</span>
-    </div>
-  </div>
-</CardHeader>
+        <div className="flex items-center justify-between w-full gap-2 flex-wrap">
+          <div className="flex items-center gap-2 min-w-0">
+            <Users className="h-4 w-4 text-purple-500" />
+            <span className="font-bold text-xl text-purple-800 whitespace-nowrap">Table Orders</span>
+            {sessionCode && (
+              <span className="ml-2 px-2 py-0.5 rounded-full bg-purple-100 text-xs text-purple-700 font-medium whitespace-nowrap">
+                Phone: <span className="font-semibold">{sessionCode}</span>
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <span className="px-2 py-0.5 rounded-full bg-purple-200 text-xs text-purple-800 font-semibold">
+              {displayOrders.length} Order{displayOrders.length !== 1 && 's'}
+            </span>
+            <span className="text-xs text-gray-500">{calculateTotalItems(displayOrders)} Item{calculateTotalItems(displayOrders) !== 1 && 's'}</span>
+          </div>
+        </div>
+      </CardHeader>
       <CardContent className="p-4">
         {Object.entries(ordersBySession).map(([codeOrKey, sessionOrders]) => {
           const isSessionCode = codeOrKey.startsWith('session_');
@@ -147,15 +177,37 @@ const TableOrders = () => {
           
           return (
             <div key={codeOrKey} className="pt-2 first:pt-0">
-              <h3 className="text-sm font-semibold text-purple-900 flex items-center gap-1 mb-2">
-                <FileStack className="h-3 w-3" />
-                {isSessionCode ? (
-                  `Phone: ${sessionCode}`
-                ) : (
-                  `Table ${codeOrKey.replace('table_', '')}`
-                )}
-              </h3>
-              
+              {/* Summary Row */}
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <FileStack className="h-3 w-3" />
+                  <h3 className="text-sm font-semibold text-purple-900">
+                    {isSessionCode ? (
+                      `Phone: ${sessionCode}`
+                    ) : (
+                      `Table ${codeOrKey.replace('table_', '')}`
+                    )}
+                  </h3>
+                  <span className="text-xs text-gray-500 ml-2">
+                    {calculateTotalItems(sessionOrders)} items · ₹{sessionTotal.toFixed(2)} total
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <span className="px-2 py-0.5 rounded-full bg-purple-100 text-xs text-purple-700 font-semibold">
+                    {sessionOrders.length} Orders
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="text-purple-700 border-purple-200"
+                    onClick={() => handlePrintBill(sessionOrders)}
+                  >
+                    <Printer className="h-4 w-4" />
+                  </Button>
+                  {/* Place your delete icon/button here if needed */}
+                </div>
+              </div>
+              {/* Expanded details (existing code) */}
               {sessionOrders.map((order) => (
                 <div key={order.id} className="py-3 animate-fade-in">
                   <div className="flex justify-between mb-1">
@@ -197,7 +249,6 @@ const TableOrders = () => {
                   ))}
                 </div>
               ))}
-              
               <div className="pt-3 flex justify-between font-medium border-t border-purple-100 mt-2">
                 <span>{isSessionCode ? 'Session Total' : `Table ${codeOrKey.replace('table_', '')} Total`}</span>
                 <span className="text-purple-900">₹{sessionTotal.toFixed(2)}</span>

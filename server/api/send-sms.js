@@ -1,17 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const { createClient } = require('@supabase/supabase-js');
-const twilio = require('twilio');
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL,
   process.env.VITE_SUPABASE_ANON_KEY
-);
-
-// Initialize Twilio client
-const twilioClient = twilio(
-  process.env.TWILIO_ACCOUNT_SID,
-  process.env.TWILIO_AUTH_TOKEN
 );
 
 router.post('/send-sms', async (req, res) => {
@@ -25,42 +18,66 @@ router.post('/send-sms', async (req, res) => {
       });
     }
 
+    // Get Twilio credentials from environment variables
+    const accountSid = process.env.TWILIO_ACCOUNT_SID;
+    const authToken = process.env.TWILIO_AUTH_TOKEN;
+    const fromNumber = process.env.TWILIO_PHONE_NUMBER;
+
+    if (!accountSid || !authToken || !fromNumber) {
+      return res.status(500).json({ error: 'Twilio configuration missing' });
+    }
+
     // Format phone number to E.164 format
     const formattedPhone = phoneNumber.startsWith('+') ? phoneNumber : `+91${phoneNumber}`;
 
-    // Send SMS using Twilio
-    const message = await twilioClient.messages.create({
-      body: `Thank you for dining at ${restaurantName}! View your bill here: ${billUrl}`,
-      from: process.env.TWILIO_PHONE_NUMBER,
-      to: formattedPhone
-    });
+    // Create message body
+    const message = `Thank you for dining at ${restaurantName}! Your bill is available here: ${billUrl}`;
 
-    // Store SMS history in database
-    const { data: smsHistory, error: dbError } = await supabase
-      .from('sms_history')
-      .insert([
-        {
-          phone_number: formattedPhone,
-          message: message.body,
-          status: message.status,
-          message_sid: message.sid,
-          restaurant_name: restaurantName
-        }
-      ]);
+    // Send SMS using Twilio API
+    const response = await fetch(
+      `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Basic ${Buffer.from(`${accountSid}:${authToken}`).toString('base64')}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          To: formattedPhone,
+          From: fromNumber,
+          Body: message,
+        }),
+      }
+    );
 
-    if (dbError) {
-      console.error('Error storing SMS history:', dbError);
+    if (!response.ok) {
+      throw new Error('Failed to send SMS');
     }
 
-    res.json({
+    const data = await response.json();
+
+    // Store SMS record in database
+    const { error: dbError } = await supabase.from('sms_history').insert({
+      phone_number: formattedPhone,
+      message: message,
+      bill_url: billUrl,
+      status: 'sent',
+      message_sid: data.sid
+    });
+
+    if (dbError) {
+      console.error('Error storing SMS record:', dbError);
+    }
+
+    return res.status(200).json({ 
       success: true,
-      messageId: message.sid
+      messageId: data.sid
     });
   } catch (error) {
     console.error('Error sending SMS:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      error: error.message || 'Failed to send SMS'
+      error: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 });
