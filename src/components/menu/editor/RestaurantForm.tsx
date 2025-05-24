@@ -214,6 +214,24 @@ const RestaurantForm: React.FC<RestaurantFormProps> = ({ restaurant, setRestaura
             />
           </div>
 
+          {/* Order Dashboard PIN Section */}
+          <div className="space-y-2">
+            <Label>Order Dashboard PIN</Label>
+            <Input
+              type="password"
+              maxLength={4}
+              pattern="[0-9]{4}"
+              value={restaurant.order_dashboard_pin || ''}
+              onChange={(e) => {
+                const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 4);
+                setRestaurant({ ...restaurant, order_dashboard_pin: val });
+              }}
+              placeholder="Set 4-digit PIN for order dashboard"
+              autoComplete="off"
+            />
+            <p className="text-xs text-muted-foreground">Required to access the order dashboard. Leave blank to disable PIN protection.</p>
+          </div>
+
           <div>
             <Label>Promotional Image</Label>
             <div className="mt-2 relative">

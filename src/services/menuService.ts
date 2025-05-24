@@ -64,6 +64,7 @@ export interface RestaurantUI {
   payment_qr_code?: string;
   upi_id?: string;
   ordersEnabled?: boolean;
+  order_dashboard_pin?: string;
 }
 
 // Add cache configuration
@@ -377,7 +378,7 @@ export const saveRestaurantMenu = async (restaurant: RestaurantUI) => {
   // Invalidate cache
   cache.delete(`restaurant_${restaurant.id}`);
 
-  const { id, name, description, categories, image_url, promo_image_url, google_review_link, location, phone, wifi_password, opening_time, closing_time, payment_qr_code, upi_id, ordersEnabled } = restaurant;
+  const { id, name, description, categories, image_url, promo_image_url, google_review_link, location, phone, wifi_password, opening_time, closing_time, payment_qr_code, upi_id, ordersEnabled, order_dashboard_pin } = restaurant;
   
   try {
     const { data: { user } } = await supabase.auth.getUser();
@@ -401,7 +402,8 @@ export const saveRestaurantMenu = async (restaurant: RestaurantUI) => {
         upi_id,
         orders_enabled: ordersEnabled !== false,
         user_id: userId,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
+        order_dashboard_pin
       });
     
     if (restaurantError) {
@@ -499,8 +501,6 @@ export const saveRestaurantMenu = async (restaurant: RestaurantUI) => {
       }
       
       for (let [itemIndex, item] of category.items.entries()) {
-        console.log(`Saving item ${item.id} with dietary_type: ${item.dietary_type}`);
-        
         const { error: itemError } = await supabase
           .from('menu_items')
           .upsert({
