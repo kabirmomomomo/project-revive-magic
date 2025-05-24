@@ -22,6 +22,8 @@ export const setupDatabase = async () => {
             name TEXT NOT NULL,
             description TEXT,
             user_id UUID,
+            image_url TEXT,
+            promo_image_url TEXT,
             orders_enabled BOOLEAN DEFAULT true,
             created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()),
             updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())

@@ -196,14 +196,14 @@ const TableOrders = () => {
                   <span className="px-2 py-0.5 rounded-full bg-purple-100 text-xs text-purple-700 font-semibold">
                     {sessionOrders.length} Orders
                   </span>
-                  <Button
+                  {/* <Button
                     variant="outline"
                     size="icon"
                     className="text-purple-700 border-purple-200"
                     onClick={() => handlePrintBill(sessionOrders)}
                   >
                     <Printer className="h-4 w-4" />
-                  </Button>
+                  </Button> */}
                   {/* Place your delete icon/button here if needed */}
                 </div>
               </div>

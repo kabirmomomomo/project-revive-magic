@@ -54,6 +54,7 @@ export interface RestaurantUI {
   description: string;
   categories: MenuCategoryUI[];
   image_url?: string;
+  promo_image_url?: string;
   google_review_link?: string;
   location?: string;
   phone?: string;
@@ -376,7 +377,7 @@ export const saveRestaurantMenu = async (restaurant: RestaurantUI) => {
   // Invalidate cache
   cache.delete(`restaurant_${restaurant.id}`);
 
-  const { id, name, description, categories, image_url, google_review_link, location, phone, wifi_password, opening_time, closing_time, payment_qr_code, upi_id, ordersEnabled } = restaurant;
+  const { id, name, description, categories, image_url, promo_image_url, google_review_link, location, phone, wifi_password, opening_time, closing_time, payment_qr_code, upi_id, ordersEnabled } = restaurant;
   
   try {
     const { data: { user } } = await supabase.auth.getUser();
@@ -389,6 +390,7 @@ export const saveRestaurantMenu = async (restaurant: RestaurantUI) => {
         name,
         description,
         image_url,
+        promo_image_url,
         google_review_link,
         location,
         phone,
@@ -746,7 +748,7 @@ export const saveRestaurantMenu = async (restaurant: RestaurantUI) => {
 export const getRestaurantBasicInfo = async (restaurantId: string) => {
   const { data, error } = await supabase
     .from('restaurants')
-    .select('id, name, description, image_url, orders_enabled, opening_time, closing_time, location, phone, wifi_password, google_review_link')
+    .select('id, name, description, image_url, promo_image_url, orders_enabled, opening_time, closing_time, location, phone, wifi_password, google_review_link')
     .eq('id', restaurantId)
     .single();
 

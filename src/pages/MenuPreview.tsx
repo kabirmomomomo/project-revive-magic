@@ -34,6 +34,7 @@ import WaiterCallButton from '@/components/menu/WaiterCallButton';
 import CategoryNavigationDialog from '@/components/menu/CategoryNavigationDialog';
 import BillSelectionDialog from "@/components/menu/BillSelectionDialog";
 import SessionCodeDisplay from "@/components/menu/SessionCodeDisplay";
+import PromoImageButton from '@/components/menu/PromoImageButton';
 
 // Sample data as fallback when API call fails or is loading
 const sampleData: Restaurant = {
@@ -129,6 +130,7 @@ const MenuPreview = () => {
     return {
       ...basicInfo,
       ordersEnabled: basicInfo.orders_enabled,
+      promo_image_url: basicInfo.promo_image_url,
       categories: categories.map((category, idx) => {
         const categoryItems = categoryQueries[idx]?.data || [];
         return {
@@ -315,6 +317,8 @@ const MenuPreview = () => {
             opening_time={restaurantToDisplay.opening_time}
             closing_time={restaurantToDisplay.closing_time}
           />
+          
+          <PromoImageButton imageUrl={restaurantToDisplay.promo_image_url} />
           
           <div className="mb-4">
             <CategoryTabs 

@@ -25,11 +25,11 @@ const CategoryTabs: React.FC<CategoryTabsProps> = ({ activeTab, onTabChange, ord
       label: "FOOD", 
       icon: <Utensils className="h-4 w-4 md:mr-2" /> 
     },
-    // { 
-    //   value: "liquor", 
-    //   label: "LIQUOR", 
-    //   icon: <Wine className="h-4 w-4 md:mr-2" /> 
-    // },
+    { 
+      value: "liquor", 
+      label: "LIQUOR", 
+      icon: <Wine className="h-4 w-4 md:mr-2" /> 
+    },
     { 
       value: "beverages", 
       label: "BEVERAGES", 
