@@ -6,15 +6,16 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Smartphone, User, Table as TableIcon, Trash2, RefreshCcw, ChevronLeft, List, Clock, Utensils, CheckCircle, Package, Printer } from 'lucide-react';
+import { Smartphone, User, Table as TableIcon, Trash2, RefreshCcw, ChevronLeft, List, Clock, Utensils, CheckCircle, Package, Printer, ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { toast } from '@/components/ui/sonner';
 import OrderBill from '@/components/menu/OrderBill';
 import WaiterCallsList from '@/components/menu/WaiterCallsList';
-import { printBill } from '@/services/printerService';
+import { useOrders, copyOrderToAnalytics } from '@/contexts/OrderContext';
 import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 interface OrderItem {
   id: string;
@@ -36,6 +37,27 @@ interface Order {
   items: OrderItem[];
 }
 
+// Utility to combine orders into a single bill object
+function combineOrdersToBill(tableOrders, paymentMode) {
+  const allItems = tableOrders.flatMap(order => order.items.map(item => ({
+    ...item,
+    order_id: order.id,
+  })));
+  const totalAmount = tableOrders.reduce((sum, order) => sum + Number(order.total_amount), 0);
+  return {
+    id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-0000-0000-0000-000000000000`,
+    created_at: new Date().toISOString(),
+    items: allItems,
+    total_amount: totalAmount,
+    customer_name: tableOrders[0]?.user_name || 'Guest',
+    customer_phone: '',
+    restaurantName: tableOrders[0]?.restaurant_id || '',
+    payment_mode: paymentMode || null,
+    table_id: tableOrders[0]?.table_id || null,
+    order_ids: tableOrders.map(o => o.id),
+  };
+}
+
 const OrderDashboard = () => {
   const { restaurantId } = useParams<{ restaurantId: string }>();
   const navigate = useNavigate();
@@ -51,6 +73,12 @@ const OrderDashboard = () => {
   const [pinError, setPinError] = useState('');
   const [showPinModal, setShowPinModal] = useState(false);
   const [pinChecked, setPinChecked] = useState(false);
+
+  const { printBill } = useOrders();
+
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [selectedTableOrders, setSelectedTableOrders] = useState<Order[]>([]);
+  const [paymentMode, setPaymentMode] = useState('Cash');
 
   const handleRefresh = async () => {
     if (!restaurantId) return;
@@ -313,24 +341,64 @@ const OrderDashboard = () => {
     }
   };
   
-  const handlePrintBill = (orders) => {
-    if (!orders || orders.length === 0) return;
-    const billData = {
-      id: orders[0].id,
-      created_at: orders[0].created_at,
-      items: orders.flatMap(order => order.items.map(item => ({
-        id: item.id,
-        name: item.item_name,
-        price: item.price,
-        quantity: item.quantity,
-        variant_name: item.variant_name
-      }))),
-      total_amount: orders.reduce((sum, order) => sum + Number(order.total_amount), 0),
-      customer_name: orders[0].user_name || 'Guest',
-      customer_phone: orders[0].session_code || '',
-      restaurantName: orders[0].restaurant_id // or fetch the name if available
-    };
-    printBill(billData);
+  // Update handlePrintBill to print all orders for the table as a single bill
+  const handlePrintBill = async (tableOrders) => {
+    if (!tableOrders || tableOrders.length === 0) return;
+    try {
+      const bill = combineOrdersToBill(tableOrders, undefined);
+      // Fetch restaurant details
+      const { data: restaurant, error: restaurantError } = await supabase
+        .from('restaurants')
+        .select('name, description, location, phone')
+        .eq('id', tableOrders[0].restaurant_id)
+        .single();
+      if (restaurantError) throw restaurantError;
+      bill.restaurantName = restaurant.name;
+      const { printBill } = await import('@/services/printerService');
+      const result = await printBill(bill);
+      if (!result.success) throw new Error(result.error || 'Failed to print bill');
+      toast.success('Bill printed successfully');
+    } catch (error) {
+      console.error('Error printing bill:', error);
+      toast.error('Failed to print bill');
+    }
+  };
+
+  const handleCheckout = (tableOrders) => {
+    setSelectedTableOrders(tableOrders);
+    setShowPaymentDialog(true);
+  };
+
+  const handleConfirmPayment = async () => {
+    try {
+      if (!selectedTableOrders || selectedTableOrders.length === 0) return;
+      const bill = combineOrdersToBill(selectedTableOrders, paymentMode);
+      // Insert combined bill into analytics_orders
+      const sessionCode = (selectedTableOrders[0] as any)?.session_code || 'N/A';
+      const { error: analyticsError } = await supabase
+        .from('analytics_orders')
+        .insert({
+          original_order_id: bill.id,
+          restaurant_id: selectedTableOrders[0].restaurant_id,
+          table_id: bill.table_id,
+          session_code: sessionCode,
+          user_name: bill.customer_name,
+          total_amount: bill.total_amount,
+          items: bill.items,
+          created_at: bill.created_at,
+          printed_at: new Date().toISOString(),
+          payment_mode: bill.payment_mode
+        });
+      if (analyticsError) throw analyticsError;
+      toast.success('Checked out and copied to analytics!');
+    } catch (error) {
+      console.error('Error during checkout:', error);
+      toast.error('Failed to checkout table');
+    } finally {
+      setShowPaymentDialog(false);
+      setSelectedTableOrders([]);
+      setPaymentMode('Cash');
+    }
   };
 
   const filteredOrders = orders.filter(order => {
@@ -667,6 +735,15 @@ const OrderDashboard = () => {
                             >
                               <Printer className="h-4 w-4" />
                             </Button>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="text-green-700 border-green-200"
+                              onClick={() => handleCheckout(tableOrders)}
+                              title="Checkout (Copy to Analytics)"
+                            >
+                              <ShoppingCart className="h-4 w-4" />
+                            </Button>
                             <Button 
                               variant="outline" 
                               size="sm"
@@ -907,6 +984,33 @@ const OrderDashboard = () => {
           <WaiterCallsList restaurantId={restaurantId || ''} />
         </div>
       </div>
+
+      {/* Payment Mode Dialog */}
+      <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Select Payment Mode</DialogTitle>
+          </DialogHeader>
+          <RadioGroup value={paymentMode} onValueChange={setPaymentMode} className="space-y-2">
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="Cash" id="cash" />
+              <label htmlFor="cash" className="text-sm">Cash</label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="UPI" id="upi" />
+              <label htmlFor="upi" className="text-sm">UPI</label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="Card" id="card" />
+              <label htmlFor="card" className="text-sm">Card</label>
+            </div>
+          </RadioGroup>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => setShowPaymentDialog(false)}>Cancel</Button>
+            <Button onClick={handleConfirmPayment}>Confirm</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

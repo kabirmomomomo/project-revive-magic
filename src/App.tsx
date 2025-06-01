@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -11,6 +10,7 @@ import NotFound from "./pages/NotFound";
 import MenuEditor from "./pages/MenuEditor";
 import MenuPreview from "./pages/MenuPreview";
 import OrderDashboard from "./pages/OrderDashboard";
+import Analytics from "./pages/Analytics";
 import { AuthProvider } from "./contexts/AuthContext";
 import { CartProvider } from "./contexts/CartContext";
 import { OrderProvider } from "./contexts/OrderContext";
@@ -35,6 +35,14 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <MenuEditor />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/analytics/:restaurantId" 
+            element={
+              <ProtectedRoute>
+                <Analytics />
               </ProtectedRoute>
             } 
           />

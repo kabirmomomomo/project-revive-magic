@@ -5,10 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Smartphone, Users, Store, FileStack, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { printBill } from '@/services/printerService';
+import { toast } from '@/components/ui/sonner';
 
 const TableOrders = () => {
-  const { tableOrders, sessionOrders } = useOrders();
+  const { tableOrders, sessionOrders, printBill } = useOrders();
   
   // Use session orders if available, otherwise use table orders
   const displayOrders = sessionOrders.length > 0 ? sessionOrders : tableOrders;
@@ -125,27 +125,12 @@ const TableOrders = () => {
   const handlePrintBill = async (orders: typeof displayOrders) => {
     if (orders.length === 0) return;
 
-    // Format the orders into a single bill
-    const billData = {
-      id: orders[0].id,
-      created_at: orders[0].created_at,
-      items: orders.flatMap(order => order.items.map(item => ({
-        id: item.id,
-        name: item.item_name,
-        price: item.price,
-        quantity: item.quantity,
-        variant_name: item.variant_name
-      }))),
-      total_amount: calculateTotal(orders),
-      customer_name: orders[0].user_name || 'Guest',
-      customer_phone: orders[0].session_code || '',
-      restaurantName: orders[0].restaurant_id // Using restaurant_id as we don't have restaurant_name
-    };
-
     try {
-      await printBill(billData);
+      // Use the first order's ID to print the bill
+      await printBill(orders[0].id);
     } catch (error) {
       console.error('Error printing bill:', error);
+      toast.error('Failed to print bill');
     }
   };
   

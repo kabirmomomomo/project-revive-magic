@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, FC, ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/components/ui/sonner';
 import { useCart } from './CartContext';
@@ -41,11 +41,12 @@ interface OrderContextType {
   fetchSessionOrders: (restaurantId: string, phoneNumber: string) => Promise<void>;
   userName: string;
   setUserName: React.Dispatch<React.SetStateAction<string>>;
+  printBill: (orderId: string, paymentMode?: string) => Promise<void>;
 }
 
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
 
-export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const OrderProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [tableOrders, setTableOrders] = useState<Order[]>([]);
   const [sessionOrders, setSessionOrders] = useState<Order[]>([]);
@@ -396,7 +397,75 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  const contextValue = {
+  const printBill = async (orderId: string, paymentMode?: string) => {
+    try {
+      // Get the order data with items (no analytics copy)
+      const { data: order, error: orderError } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          items:order_items!inner (
+            item_name,
+            quantity,
+            price,
+            variant_name
+          )
+        `)
+        .eq('id', orderId)
+        .single();
+
+      if (orderError) {
+        console.error('Error fetching order:', orderError);
+        throw orderError;
+      }
+
+      // Get restaurant details for printing
+      const { data: restaurant, error: restaurantError } = await supabase
+        .from('restaurants')
+        .select('name, description, location, phone')
+        .eq('id', order.restaurant_id)
+        .single();
+
+      if (restaurantError) {
+        console.error('Error fetching restaurant details:', restaurantError);
+        throw restaurantError;
+      }
+
+      // Prepare bill data for printing
+      const billData = {
+        id: order.id,
+        created_at: order.created_at,
+        items: order.items.map(item => ({
+          id: item.id,
+          name: item.item_name,
+          price: item.price,
+          quantity: item.quantity,
+          variant_name: item.variant_name
+        })),
+        total_amount: order.total_amount,
+        customer_name: order.user_name || 'Guest',
+        customer_phone: order.session_code || '',
+        restaurantName: restaurant.name,
+        payment_mode: paymentMode || null
+      };
+
+      // Call the print service
+      const { printBill } = await import('@/services/printerService');
+      const result = await printBill(billData);
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to print bill');
+      }
+
+      toast.success('Bill printed successfully');
+    } catch (error) {
+      console.error('Error printing bill:', error);
+      toast.error('Failed to print bill');
+      throw error;
+    }
+  };
+
+  const contextValue: OrderContextType = {
     orders,
     tableOrders,
     sessionOrders,
@@ -406,7 +475,8 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     fetchTableOrders,
     fetchSessionOrders,
     userName,
-    setUserName
+    setUserName,
+    printBill
   };
 
   return (
@@ -423,3 +493,48 @@ export const useOrders = () => {
   }
   return context;
 };
+
+async function copyOrderToAnalytics(orderId: string, paymentMode?: string) {
+  // Get the order data with items
+  const { data: order, error: orderError } = await supabase
+    .from('orders')
+    .select(`
+      *,
+      items:order_items!inner (
+        item_name,
+        quantity,
+        price,
+        variant_name
+      )
+    `)
+    .eq('id', orderId)
+    .single();
+
+  if (orderError) {
+    console.error('Error fetching order:', orderError);
+    throw orderError;
+  }
+
+  // Manually insert into analytics_orders
+  const { error: analyticsError } = await supabase
+    .from('analytics_orders')
+    .insert({
+      original_order_id: order.id,
+      restaurant_id: order.restaurant_id,
+      table_id: order.table_id,
+      session_code: order.session_code,
+      user_name: order.user_name,
+      total_amount: order.total_amount,
+      items: order.items,
+      created_at: order.created_at,
+      printed_at: new Date().toISOString(),
+      payment_mode: paymentMode || null
+    });
+
+  if (analyticsError) {
+    console.error('Error copying order to analytics:', analyticsError);
+    throw analyticsError;
+  }
+}
+
+export { copyOrderToAnalytics };

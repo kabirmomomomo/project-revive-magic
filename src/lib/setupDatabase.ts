@@ -217,6 +217,101 @@ export const setupDatabase = async () => {
       }
     }
 
+    // Create analytics_orders table
+    await supabase.rpc('create_analytics_orders_table', {
+      sql: `
+        CREATE TABLE IF NOT EXISTS analytics_orders (
+          id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+          original_order_id UUID NOT NULL,
+          restaurant_id UUID NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
+          table_id UUID,
+          session_code TEXT,
+          user_name TEXT,
+          total_amount DECIMAL(10,2) NOT NULL,
+          items JSONB NOT NULL,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+          printed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+          CONSTRAINT fk_restaurant FOREIGN KEY (restaurant_id) REFERENCES restaurants(id) ON DELETE CASCADE
+        );
+      `
+    });
+
+    // Create function to copy order data to analytics_orders
+    await supabase.rpc('create_copy_order_to_analytics_function', {
+      sql: `
+        CREATE OR REPLACE FUNCTION copy_order_to_analytics(order_id UUID)
+        RETURNS void AS $$
+        DECLARE
+          order_data RECORD;
+          order_items JSONB;
+          existing_order RECORD;
+        BEGIN
+          -- Get order data
+          SELECT 
+            o.id as original_order_id,
+            o.restaurant_id,
+            o.table_id,
+            o.session_code,
+            o.user_name,
+            o.total_amount,
+            o.created_at
+          INTO order_data
+          FROM orders o
+          WHERE o.id = order_id;
+
+          -- Get order items as JSONB
+          SELECT jsonb_agg(
+            jsonb_build_object(
+              'item_name', oi.item_name,
+              'quantity', oi.quantity,
+              'price', oi.price,
+              'variant_name', oi.variant_name
+            )
+          ) INTO order_items
+          FROM order_items oi
+          WHERE oi.order_id = order_id;
+
+          -- Check if an identical order already exists
+          SELECT * INTO existing_order
+          FROM analytics_orders
+          WHERE original_order_id = order_data.original_order_id
+            AND restaurant_id = order_data.restaurant_id
+            AND table_id IS NOT DISTINCT FROM order_data.table_id
+            AND session_code IS NOT DISTINCT FROM order_data.session_code
+            AND user_name IS NOT DISTINCT FROM order_data.user_name
+            AND total_amount = order_data.total_amount
+            AND items = order_items
+          LIMIT 1;
+
+          -- Only insert if no identical order exists
+          IF existing_order IS NULL THEN
+            INSERT INTO analytics_orders (
+              original_order_id,
+              restaurant_id,
+              table_id,
+              session_code,
+              user_name,
+              total_amount,
+              items,
+              created_at,
+              printed_at
+            ) VALUES (
+              order_data.original_order_id,
+              order_data.restaurant_id,
+              order_data.table_id,
+              order_data.session_code,
+              order_data.user_name,
+              order_data.total_amount,
+              order_items,
+              order_data.created_at,
+              NOW()
+            );
+          END IF;
+        END;
+        $$ LANGUAGE plpgsql;
+      `
+    });
+
     console.log('Database tables setup complete!');
     return true;
   } catch (error) {

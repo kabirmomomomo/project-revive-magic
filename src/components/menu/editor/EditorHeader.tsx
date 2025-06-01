@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Eye, Save, LogOut, Settings, KeyRound, List, Receipt } from "lucide-react";
+import { Eye, Save, LogOut, Settings, KeyRound, List, Receipt, BarChart3 } from "lucide-react";
 import { RestaurantUI } from "@/services/menuService";
 import { useNavigate } from "react-router-dom";
 import RestaurantDetailsDialog from "@/components/menu/RestaurantDetailsDialog";
@@ -25,7 +25,10 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
   isSaving,
 }) => {
   const navigate = useNavigate();
-  const [showBillGenerator, setShowBillGenerator] = useState(false);
+  const [isRestaurantDetailsOpen, setIsRestaurantDetailsOpen] = useState(false);
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const [isTableQROpen, setIsTableQROpen] = useState(false);
+  const [isManualBillOpen, setIsManualBillOpen] = useState(false);
 
   // Get all menu items from all categories
   const allMenuItems = restaurant.categories.flatMap(category => category.items);
@@ -43,13 +46,15 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
           variant="outline"
           size="sm"
           className="h-8 px-2 md:px-3"
-          onClick={() => setShowBillGenerator(true)}
+          onClick={() => setIsManualBillOpen(true)}
         >
           <Receipt className="h-4 w-4" />
           <span className="hidden md:inline ml-2">Generate Bill</span>
         </Button>
 
         <RestaurantDetailsDialog 
+          open={isRestaurantDetailsOpen}
+          onOpenChange={setIsRestaurantDetailsOpen}
           restaurant={restaurant}
           onSave={handleSaveRestaurantDetails}
         >
@@ -59,7 +64,10 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
           </Button>
         </RestaurantDetailsDialog>
         
-        <ChangePasswordDialog>
+        <ChangePasswordDialog
+          open={isChangePasswordOpen}
+          onOpenChange={setIsChangePasswordOpen}
+        >
           <Button variant="outline" size="sm" className="h-8 px-2 md:px-3">
             <KeyRound className="h-4 w-4" />
             <span className="hidden md:inline ml-2">Password</span>
@@ -76,7 +84,11 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
           <span className="hidden md:inline ml-2">Sign Out</span>
         </Button>
 
-        <TableQRDialog restaurantId={restaurant.id} />
+        <TableQRDialog
+          open={isTableQROpen}
+          onOpenChange={setIsTableQROpen}
+          restaurantId={restaurant.id}
+        />
 
         <Button 
           variant="outline"
@@ -86,6 +98,15 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
         >
           <Eye className="h-4 w-4" />
           <span className="hidden md:inline ml-2">Preview</span>
+        </Button>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => navigate(`/analytics/${restaurant.id}`)}
+        >
+          <BarChart3 className="h-4 w-4 mr-2" />
+          Analytics
         </Button>
 
         <Button 
@@ -110,8 +131,8 @@ const EditorHeader: React.FC<EditorHeaderProps> = ({
       </div>
 
       <ManualBillGenerator
-        open={showBillGenerator}
-        onOpenChange={setShowBillGenerator}
+        open={isManualBillOpen}
+        onOpenChange={setIsManualBillOpen}
         menuItems={allMenuItems}
         restaurantId={restaurant.id}
       />
