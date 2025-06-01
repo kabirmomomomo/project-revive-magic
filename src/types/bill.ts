@@ -12,4 +12,5 @@ export interface BillOrder {
   customer_name: string;
   customer_phone: string;
   restaurantName?: string;
+  payment_mode?: string;
 } 

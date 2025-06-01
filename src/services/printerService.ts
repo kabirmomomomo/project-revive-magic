@@ -122,6 +122,7 @@ export const printBill = async (bill: BillOrder): Promise<{ success: boolean; er
       `Customer: ${bill.customer_name}\n`,
       `Phone: ${bill.customer_phone}\n`,
       `Date: ${new Date(bill.created_at).toLocaleString()}\n`,
+      bill.payment_mode ? `Payment Mode: ${bill.payment_mode}\n` : '',
       '\nItems:\n',
       ...bill.items.map(item =>
         `${item.quantity}x ${item.name}${item.variant_name ? ` (${item.variant_name})` : ''} - ₹${item.price}\n`

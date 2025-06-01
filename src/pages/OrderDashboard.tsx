@@ -40,7 +40,10 @@ interface Order {
 // Utility to combine orders into a single bill object
 function combineOrdersToBill(tableOrders, paymentMode) {
   const allItems = tableOrders.flatMap(order => order.items.map(item => ({
-    ...item,
+    name: item.item_name,
+    variant_name: item.variant_name,
+    price: item.price,
+    quantity: item.quantity,
     order_id: order.id,
   })));
   const totalAmount = tableOrders.reduce((sum, order) => sum + Number(order.total_amount), 0);
@@ -79,6 +82,7 @@ const OrderDashboard = () => {
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [selectedTableOrders, setSelectedTableOrders] = useState<Order[]>([]);
   const [paymentMode, setPaymentMode] = useState('Cash');
+  const [tablePaymentModes, setTablePaymentModes] = useState<Record<string, string>>({});
 
   const handleRefresh = async () => {
     if (!restaurantId) return;
@@ -341,11 +345,11 @@ const OrderDashboard = () => {
     }
   };
   
-  // Update handlePrintBill to print all orders for the table as a single bill
-  const handlePrintBill = async (tableOrders) => {
+  // Update handlePrintBill to accept paymentMode
+  const handlePrintBill = async (tableOrders, paymentMode) => {
     if (!tableOrders || tableOrders.length === 0) return;
     try {
-      const bill = combineOrdersToBill(tableOrders, undefined);
+      const bill = combineOrdersToBill(tableOrders, paymentMode);
       // Fetch restaurant details
       const { data: restaurant, error: restaurantError } = await supabase
         .from('restaurants')
@@ -366,12 +370,19 @@ const OrderDashboard = () => {
 
   const handleCheckout = (tableOrders) => {
     setSelectedTableOrders(tableOrders);
+    setPaymentMode(tablePaymentModes[tableOrders[0].table_id] || 'Cash');
     setShowPaymentDialog(true);
   };
 
   const handleConfirmPayment = async () => {
     try {
       if (!selectedTableOrders || selectedTableOrders.length === 0) return;
+      const tableId = selectedTableOrders[0].table_id;
+      setTablePaymentModes(prev => ({
+        ...prev,
+        [tableId]: paymentMode
+      }));
+      
       const bill = combineOrdersToBill(selectedTableOrders, paymentMode);
       // Insert combined bill into analytics_orders
       const sessionCode = (selectedTableOrders[0] as any)?.session_code || 'N/A';
@@ -730,7 +741,7 @@ const OrderDashboard = () => {
                               variant="outline"
                               size="icon"
                               className="text-purple-700 border-purple-200"
-                              onClick={() => handlePrintBill(tableOrders)}
+                              onClick={() => handlePrintBill(tableOrders, tablePaymentModes[tableId] || 'Cash')}
                               title="Print Bill"
                             >
                               <Printer className="h-4 w-4" />
