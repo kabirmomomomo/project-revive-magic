@@ -522,472 +522,472 @@ const OrderDashboard = () => {
   }
   
   return (
-    <div className="container mx-auto py-2 md:py-4 px-1 md:px-2 max-w-[100vw] overflow-x-hidden">
-      <div className="flex flex-col md:flex-row justify-between items-center mb-4">
-        <div className="flex items-center gap-2 w-full md:w-auto">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => navigate('/menu-editor')}
-            className="h-8 w-8 bg-purple-50 hover:bg-purple-100"
-          >
-            <ChevronLeft className="h-4 w-4 text-purple-600" />
-          </Button>
-          <div>
-            <h1 className="text-xl md:text-2xl font-bold text-purple-900">Order Dashboard</h1>
-            <p className="text-xs md:text-sm text-gray-500">Monitor and manage orders in real-time</p>
+    <div className="w-full min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-100 px-0 md:px-4 py-0 md:py-6">
+      <div className="w-full max-w-[1600px] mx-auto">
+        <div className="w-full flex flex-col md:flex-row justify-between items-center mb-4 px-2 md:px-6 pt-6 pb-4 bg-white/90 rounded-b-2xl shadow-lg border-b border-purple-200 sticky top-0 z-30 backdrop-blur-md transition-all duration-300">
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => navigate('/menu-editor')}
+              className="h-9 w-9 bg-gradient-to-br from-purple-100 to-blue-100 hover:from-purple-200 hover:to-blue-200 border-purple-200 shadow transition-all duration-200"
+            >
+              <ChevronLeft className="h-5 w-5 text-purple-600 transition-transform duration-200 group-hover:-translate-x-1" />
+            </Button>
+            <div>
+              <h1 className="text-2xl md:text-3xl font-extrabold text-purple-900 tracking-tight drop-shadow-sm">Order Dashboard</h1>
+              <p className="text-xs md:text-sm text-gray-500">Monitor and manage orders in real-time</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 mt-2 md:mt-0">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className={`h-9 w-9 bg-gradient-to-br from-purple-100 to-blue-100 hover:from-purple-200 hover:to-blue-200 border-purple-200 shadow transition-all duration-200 ${isRefreshing ? 'animate-spin' : ''}`}
+            >
+              <RefreshCcw className="h-5 w-5 text-purple-600 transition-transform duration-200 group-hover:rotate-90" />
+            </Button>
+            <Badge className="bg-gradient-to-r from-purple-200 to-blue-100 text-purple-900 border-purple-200 text-xs font-semibold shadow-sm px-3 py-1">
+              {orders.length} Orders
+            </Badge>
+            <Badge className="bg-gradient-to-r from-green-200 to-blue-100 text-green-900 border-green-200 text-xs font-semibold shadow-sm px-3 py-1">
+              ₹{orders.reduce((sum, order) => sum + Number(order.total_amount), 0).toFixed(2)} Total
+            </Badge>
           </div>
         </div>
-        <div className="flex items-center gap-2 mt-2 md:mt-0">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            className={`h-8 w-8 bg-purple-50 hover:bg-purple-100 ${isRefreshing ? 'animate-spin' : ''}`}
-          >
-            <RefreshCcw className="h-4 w-4 text-purple-600" />
-          </Button>
-          <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-200 border-purple-200 text-xs">
-            {orders.length} Orders
-          </Badge>
-          <Badge className="bg-green-100 text-green-800 hover:bg-green-200 border-green-200 text-xs">
-            ₹{orders.reduce((sum, order) => sum + Number(order.total_amount), 0).toFixed(2)} Total
-          </Badge>
-        </div>
-      </div>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 md:gap-4">
-        <div className="lg:col-span-2">
+        <div className="w-full px-2 md:px-6">
           <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="w-full">
             <div className="w-full overflow-x-auto">
-              <TabsList className="w-full min-w-max mb-2 bg-purple-50">
-                <TabsTrigger value="all" className="text-xs md:text-sm whitespace-nowrap data-[state=active]:bg-purple-100 data-[state=active]:text-purple-900">
-                  <List className="h-3 w-3 mr-1" /> All Orders
+              <TabsList className="w-full min-w-[700px] md:min-w-0 mb-2 bg-gradient-to-r from-purple-50 to-blue-50 rounded-2xl flex-nowrap shadow-sm">
+                <TabsTrigger value="all" className="text-xs md:text-sm whitespace-nowrap data-[state=active]:bg-purple-200 data-[state=active]:text-purple-900 data-[state=active]:shadow-lg transition-all duration-200 hover:bg-purple-100 hover:text-purple-900">
+                  <List className="h-4 w-4 mr-1 transition-transform duration-200 group-hover:scale-110" /> All Orders
                 </TabsTrigger>
-                <TabsTrigger value="table" className="text-xs md:text-sm whitespace-nowrap data-[state=active]:bg-purple-100 data-[state=active]:text-purple-900">
-                  <TableIcon className="h-3 w-3 mr-1" /> Table Orders
+                <TabsTrigger value="table" className="text-xs md:text-sm whitespace-nowrap data-[state=active]:bg-blue-200 data-[state=active]:text-blue-900 data-[state=active]:shadow-lg transition-all duration-200 hover:bg-blue-100 hover:text-blue-900">
+                  <TableIcon className="h-4 w-4 mr-1 transition-transform duration-200 group-hover:scale-110" /> Table Orders
                 </TabsTrigger>
-                <TabsTrigger value="placed" className="text-xs md:text-sm whitespace-nowrap data-[state=active]:bg-purple-100 data-[state=active]:text-purple-900">
-                  <Clock className="h-3 w-3 mr-1" /> Placed
+                <TabsTrigger value="placed" className="text-xs md:text-sm whitespace-nowrap data-[state=active]:bg-blue-100 data-[state=active]:text-blue-900 data-[state=active]:shadow-lg transition-all duration-200 hover:bg-blue-50 hover:text-blue-900">
+                  <Clock className="h-4 w-4 mr-1 transition-transform duration-200 group-hover:scale-110" /> Placed
                 </TabsTrigger>
-                <TabsTrigger value="preparing" className="text-xs md:text-sm whitespace-nowrap data-[state=active]:bg-purple-100 data-[state=active]:text-purple-900">
-                  <Utensils className="h-3 w-3 mr-1" /> Preparing
+                <TabsTrigger value="preparing" className="text-xs md:text-sm whitespace-nowrap data-[state=active]:bg-amber-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-lg transition-all duration-200 hover:bg-amber-50 hover:text-amber-900">
+                  <Utensils className="h-4 w-4 mr-1 transition-transform duration-200 group-hover:scale-110" /> Preparing
                 </TabsTrigger>
-                <TabsTrigger value="ready" className="text-xs md:text-sm whitespace-nowrap data-[state=active]:bg-purple-100 data-[state=active]:text-purple-900">
-                  <CheckCircle className="h-3 w-3 mr-1" /> Ready
+                <TabsTrigger value="ready" className="text-xs md:text-sm whitespace-nowrap data-[state=active]:bg-green-100 data-[state=active]:text-green-900 data-[state=active]:shadow-lg transition-all duration-200 hover:bg-green-50 hover:text-green-900">
+                  <CheckCircle className="h-4 w-4 mr-1 transition-transform duration-200 group-hover:scale-110" /> Ready
                 </TabsTrigger>
-                <TabsTrigger value="completed" className="text-xs md:text-sm whitespace-nowrap data-[state=active]:bg-purple-100 data-[state=active]:text-purple-900">
-                  <Package className="h-3 w-3 mr-1" /> Completed
+                <TabsTrigger value="completed" className="text-xs md:text-sm whitespace-nowrap data-[state=active]:bg-gray-200 data-[state=active]:text-gray-900 data-[state=active]:shadow-lg transition-all duration-200 hover:bg-gray-100 hover:text-gray-900">
+                  <Package className="h-4 w-4 mr-1 transition-transform duration-200 group-hover:scale-110" /> Completed
                 </TabsTrigger>
               </TabsList>
             </div>
-            
-            <TabsContent value="all">
-              <Card className="border-purple-100">
-                <CardHeader className="p-3">
-                  <CardTitle className="text-base md:text-lg">All Orders</CardTitle>
-                  <CardDescription className="text-xs">
-                    Showing all {filteredOrders.length} orders
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="p-2">
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-purple-50">
-                          <TableHead className="text-xs">Order ID</TableHead>
-                          <TableHead className="text-xs">Time</TableHead>
-                          <TableHead className="text-xs">Name</TableHead>
-                          <TableHead className="text-xs">Table</TableHead>
-                          <TableHead className="text-xs">Items</TableHead>
-                          <TableHead className="text-xs">Total</TableHead>
-                          <TableHead className="text-xs">Status</TableHead>
-                          <TableHead className="text-xs">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredOrders.length === 0 ? (
-                          <TableRow>
-                            <TableCell colSpan={7} className="text-center py-4 text-gray-500 text-xs">
-                              No orders found
-                            </TableCell>
-                          </TableRow>
-                        ) : (
-                          filteredOrders.map(order => (
-                            <TableRow key={order.id} className="hover:bg-purple-50/50">
-                              <TableCell className="text-xs">{order.id.slice(0, 8)}</TableCell>
-                              <TableCell className="text-xs">{format(new Date(order.created_at), 'MMM d, h:mm a')}</TableCell>
-                              <TableCell className="text-xs">
-                                <div className="flex items-center">
-                                  <User className="h-3 w-3 mr-1 text-purple-600" />
-                                  {order.user_name || 'Guest'}
-                                </div>
-                              </TableCell>
-                              <TableCell className="text-xs">
-                                {order.table_id ? (
-                                  <div className="flex items-center">
-                                    <TableIcon className="h-3 w-3 mr-1 text-purple-600" />
-                                    Table {order.table_id}
-                                  </div>
-                                ) : (
-                                  <div className="flex items-center">
-                                    <Smartphone className="h-3 w-3 mr-1 text-gray-400" />
-                                    Individual
-                                  </div>
-                                )}
-                              </TableCell>
-                              <TableCell className="text-xs">{order.items.reduce((sum, item) => sum + item.quantity, 0)}</TableCell>
-                              <TableCell className="text-xs">₹{Number(order.total_amount).toFixed(2)}</TableCell>
-                              <TableCell>
-                                <Badge 
-                                  className={`text-xs ${
-                                    order.status === 'placed' ? 'bg-blue-100 text-blue-800 border-blue-200' :
-                                    order.status === 'preparing' ? 'bg-amber-100 text-amber-800 border-amber-200' :
-                                    order.status === 'ready' ? 'bg-green-100 text-green-800 border-green-200' :
-                                    'bg-gray-100 text-gray-800 border-gray-200'
-                                  }`}
-                                >
-                                  {order.status}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex gap-1">
-                                  {order.status === 'placed' && (
-                                    <Button 
-                                      size="sm" 
-                                      variant="outline" 
-                                      onClick={() => updateOrderStatus(order.id, 'preparing')}
-                                      className="h-6 text-xs bg-amber-50 hover:bg-amber-100 border-amber-200"
-                                    >
-                                      <Utensils className="h-3 w-3 mr-1" /> Prepare
-                                    </Button>
-                                  )}
-                                  {order.status === 'preparing' && (
-                                    <Button 
-                                      size="sm" 
-                                      variant="outline" 
-                                      onClick={() => updateOrderStatus(order.id, 'ready')}
-                                      className="h-6 text-xs bg-green-50 hover:bg-green-100 border-green-200"
-                                    >
-                                      <CheckCircle className="h-3 w-3 mr-1" /> Ready
-                                    </Button>
-                                  )}
-                                  {order.status === 'ready' && (
-                                    <Button 
-                                      size="sm" 
-                                      variant="outline" 
-                                      onClick={() => updateOrderStatus(order.id, 'completed')}
-                                      className="h-6 text-xs bg-gray-50 hover:bg-gray-100 border-gray-200"
-                                    >
-                                      <Package className="h-3 w-3 mr-1" /> Complete
-                                    </Button>
-                                  )}
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))
-                        )}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-            
-            <TabsContent value="table">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {Object.keys(ordersByTable)
-                  .filter(tableId => tableId !== 'no-table')
-                  .sort((a, b) => {
-                    // Split table IDs into base number and decimal part
-                    const [aBase, aDecimal] = a.split('.').map(Number);
-                    const [bBase, bDecimal] = b.split('.').map(Number);
-                    
-                    // First compare base numbers
-                    if (aBase !== bBase) {
-                      return aBase - bBase;
-                    }
-                    
-                    // If base numbers are equal, compare decimal parts
-                    // If one doesn't have a decimal part, it comes first
-                    if (isNaN(aDecimal) && isNaN(bDecimal)) return 0;
-                    if (isNaN(aDecimal)) return -1;
-                    if (isNaN(bDecimal)) return 1;
-                    
-                    return aDecimal - bDecimal;
-                  })
-                  .map((tableId) => {
-                  const tableOrders = ordersByTable[tableId];
-                  const tableTotal = tableOrders.reduce((sum, order) => sum + Number(order.total_amount), 0);
-                  const totalItems = tableOrders.reduce(
-                    (sum, order) => sum + order.items.reduce((itemSum, item) => itemSum + item.quantity, 0), 
-                    0
-                  );
-                  
-                  return (
-                    <Card key={tableId} className="overflow-hidden">
-                      <CardHeader className="bg-purple-50">
-                        <div className="flex justify-between items-center">
-                          <CardTitle className="text-lg flex items-center">
-                            <TableIcon className="h-5 w-5 mr-2 text-purple-800" />
-                            Table {tableId}
-                          </CardTitle>
-                          <div className="flex items-center gap-2">
-                            <Badge className="bg-purple-100 text-purple-800">
-                              {tableOrders.length} Orders
-                            </Badge>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="text-purple-700 border-purple-200"
-                              onClick={() => handlePrintBill(tableOrders, tablePaymentModes[tableId] || 'Cash')}
-                              title="Print Bill"
-                            >
-                              <Printer className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="text-green-700 border-green-200"
-                              onClick={() => handleCheckout(tableOrders)}
-                              title="Checkout (Copy to Analytics)"
-                            >
-                              <ShoppingCart className="h-4 w-4" />
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              className="h-7 px-2 text-destructive hover:text-destructive"
-                              onClick={() => {
-                                if (window.confirm(`Are you sure you want to delete all orders from Table ${tableId}?`)) {
-                                  deleteTableOrders(tableId);
-                                }
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                        <CardDescription>
-                          {totalItems} items · ₹{tableTotal.toFixed(2)} total
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="pt-4">
-                        <div className="space-y-4 max-h-80 overflow-y-auto">
-                          {tableOrders.map(order => (
-                            <div key={order.id} className="border border-gray-100 rounded-lg p-3">
-                              <div className="flex justify-between items-center mb-2">
-                                <div className="flex items-center space-x-1">
-                                  <User className="h-4 w-4 text-purple-600" />
-                                  <span className="text-xs text-gray-500">{order.user_name || 'Guest'}</span>
-                                </div>
-                                <Badge 
-                                  className={
-                                    order.status === 'placed' ? 'bg-blue-100 text-blue-800 border-blue-200' :
-                                    order.status === 'preparing' ? 'bg-amber-100 text-amber-800 border-amber-200' :
-                                    order.status === 'ready' ? 'bg-green-100 text-green-800 border-green-200' :
-                                    'bg-gray-100 text-gray-800 border-gray-200'
-                                  }
-                                >
-                                  {order.status}
-                                </Badge>
-                              </div>
-                              {order.items.map(item => (
-                                <div key={item.id} className="flex justify-between text-sm py-1">
-                                  <span>
-                                    {item.quantity}× {item.item_name}
-                                    {item.variant_name && (
-                                      <span className="text-gray-500 text-xs"> ({item.variant_name})</span>
-                                    )}
-                                  </span>
-                                  <div className="flex items-center gap-2">
-                                    <span>₹{(item.price * item.quantity).toFixed(2)}</span>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-6 w-6 text-destructive hover:text-destructive"
-                                      onClick={() => {
-                                        if (window.confirm(`Are you sure you want to delete ${item.quantity}× ${item.item_name}?`)) {
-                                          deleteOrderItem(order.id, item.id);
-                                        }
-                                      }}
-                                    >
-                                      <Trash2 className="h-3 w-3" />
-                                    </Button>
-                                  </div>
-                                </div>
-                              ))}
-                              <Separator className="my-2" />
-                              <div className="flex justify-between items-center mt-1">
-                                <span className="text-sm">₹{Number(order.total_amount).toFixed(2)}</span>
-                                <div className="flex space-x-1">
-                                  {order.status === 'placed' && (
-                                    <Button 
-                                      size="sm" 
-                                      variant="outline" 
-                                      onClick={() => updateOrderStatus(order.id, 'preparing')}
-                                      className="text-xs h-7"
-                                    >
-                                      Prepare
-                                    </Button>
-                                  )}
-                                  {order.status === 'preparing' && (
-                                    <Button 
-                                      size="sm" 
-                                      variant="outline" 
-                                      onClick={() => updateOrderStatus(order.id, 'ready')}
-                                      className="text-xs h-7"
-                                    >
-                                      Ready
-                                    </Button>
-                                  )}
-                                  {order.status === 'ready' && (
-                                    <Button 
-                                      size="sm" 
-                                      variant="outline" 
-                                      onClick={() => updateOrderStatus(order.id, 'completed')}
-                                      className="text-xs h-7"
-                                    >
-                                      Complete
-                                    </Button>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-                
-                {!Object.keys(ordersByTable).filter(id => id !== 'no-table').length && (
-                  <Card className="col-span-full">
-                    <CardContent className="pt-6 pb-6 text-center">
-                      <TableIcon className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                      <p className="text-gray-500">No table orders found</p>
-                    </CardContent>
-                  </Card>
-                )}
-              </div>
-            </TabsContent>
-            
-            {['placed', 'preparing', 'ready', 'completed'].map(status => (
-              <TabsContent key={status} value={status}>
+            <div className="w-full">
+              <TabsContent value="all">
                 <Card className="border-purple-100">
                   <CardHeader className="p-3">
-                    <CardTitle className="capitalize text-base md:text-lg">{status} Orders</CardTitle>
+                    <CardTitle className="text-base md:text-lg">All Orders</CardTitle>
                     <CardDescription className="text-xs">
-                      Showing {filteredOrders.length} orders with status "{status}"
+                      Showing all {filteredOrders.length} orders
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="p-2">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                      {filteredOrders.length === 0 ? (
-                        <div className="col-span-full text-center py-8 text-gray-500 text-xs">
-                          No {status} orders found
-                        </div>
-                      ) : (
-                        filteredOrders.map(order => (
-                          <Card key={order.id} className="overflow-hidden border-purple-100">
-                            <CardHeader className="p-3 bg-purple-50">
-                              <div className="flex justify-between items-start">
-                                <div>
-                                  <div className="text-xs text-gray-500">
-                                    {format(new Date(order.created_at), 'MMM d, h:mm a')}
-                                  </div>
-                                  <div className="font-medium flex items-center text-sm">
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-purple-50">
+                            <TableHead className="text-xs">Order ID</TableHead>
+                            <TableHead className="text-xs">Time</TableHead>
+                            <TableHead className="text-xs">Name</TableHead>
+                            <TableHead className="text-xs">Table</TableHead>
+                            <TableHead className="text-xs">Items</TableHead>
+                            <TableHead className="text-xs">Total</TableHead>
+                            <TableHead className="text-xs">Status</TableHead>
+                            <TableHead className="text-xs">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredOrders.length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={7} className="text-center py-4 text-gray-500 text-xs">
+                                No orders found
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            filteredOrders.map(order => (
+                              <TableRow key={order.id} className="hover:bg-purple-50/50">
+                                <TableCell className="text-xs">{order.id.slice(0, 8)}</TableCell>
+                                <TableCell className="text-xs">{format(new Date(order.created_at), 'MMM d, h:mm a')}</TableCell>
+                                <TableCell className="text-xs">
+                                  <div className="flex items-center">
                                     <User className="h-3 w-3 mr-1 text-purple-600" />
                                     {order.user_name || 'Guest'}
                                   </div>
-                                  <div className="font-medium flex items-center text-sm mt-1">
-                                    {order.table_id ? (
-                                      <div className="flex items-center">
-                                        <TableIcon className="h-3 w-3 mr-1 text-purple-600" />
-                                        Table {order.table_id}
-                                      </div>
-                                    ) : (
-                                      <div className="flex items-center">
-                                        <Smartphone className="h-3 w-3 mr-1" />
-                                        Individual
-                                      </div>
+                                </TableCell>
+                                <TableCell className="text-xs">
+                                  {order.table_id ? (
+                                    <div className="flex items-center">
+                                      <TableIcon className="h-3 w-3 mr-1 text-purple-600" />
+                                      Table {order.table_id}
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-center">
+                                      <Smartphone className="h-3 w-3 mr-1 text-gray-400" />
+                                      Individual
+                                    </div>
+                                  )}
+                                </TableCell>
+                                <TableCell className="text-xs">{order.items.reduce((sum, item) => sum + item.quantity, 0)}</TableCell>
+                                <TableCell className="text-xs">₹{Number(order.total_amount).toFixed(2)}</TableCell>
+                                <TableCell>
+                                  <Badge 
+                                    className={`text-xs ${
+                                      order.status === 'placed' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+                                      order.status === 'preparing' ? 'bg-amber-100 text-amber-800 border-amber-200' :
+                                      order.status === 'ready' ? 'bg-green-100 text-green-800 border-green-200' :
+                                      'bg-gray-100 text-gray-800 border-gray-200'
+                                    }`}
+                                  >
+                                    {order.status}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex gap-1">
+                                    {order.status === 'placed' && (
+                                      <Button 
+                                        size="sm" 
+                                        variant="outline" 
+                                        onClick={() => updateOrderStatus(order.id, 'preparing')}
+                                        className="h-6 text-xs bg-amber-50 hover:bg-amber-100 border-amber-200"
+                                      >
+                                        <Utensils className="h-3 w-3 mr-1" /> Prepare
+                                      </Button>
+                                    )}
+                                    {order.status === 'preparing' && (
+                                      <Button 
+                                        size="sm" 
+                                        variant="outline" 
+                                        onClick={() => updateOrderStatus(order.id, 'ready')}
+                                        className="h-6 text-xs bg-green-50 hover:bg-green-100 border-green-200"
+                                      >
+                                        <CheckCircle className="h-3 w-3 mr-1" /> Ready
+                                      </Button>
+                                    )}
+                                    {order.status === 'ready' && (
+                                      <Button 
+                                        size="sm" 
+                                        variant="outline" 
+                                        onClick={() => updateOrderStatus(order.id, 'completed')}
+                                        className="h-6 text-xs bg-gray-50 hover:bg-gray-100 border-gray-200"
+                                      >
+                                        <Package className="h-3 w-3 mr-1" /> Complete
+                                      </Button>
                                     )}
                                   </div>
-                                </div>
-                                <Badge 
-                                  className={`text-xs ${
-                                    order.status === 'placed' ? 'bg-blue-100 text-blue-800 border-blue-200' :
-                                    order.status === 'preparing' ? 'bg-amber-100 text-amber-800 border-amber-200' :
-                                    order.status === 'ready' ? 'bg-green-100 text-green-800 border-green-200' :
-                                    'bg-gray-100 text-gray-800 border-gray-200'
-                                  }`}
-                                >
-                                  {order.status}
-                                </Badge>
-                              </div>
-                            </CardHeader>
-                            <CardContent className="p-3">
-                              <div className="space-y-1">
-                                {order.items.map(item => (
-                                  <div key={item.id} className="flex justify-between text-xs">
-                                    <span>
-                                      {item.quantity}× {item.item_name}
-                                      {item.variant_name && (
-                                        <span className="text-gray-500"> ({item.variant_name})</span>
-                                      )}
-                                    </span>
-                                    <span>₹{(item.price * item.quantity).toFixed(2)}</span>
-                                  </div>
-                                ))}
-                              </div>
-                              <Separator className="my-2" />
-                              <div className="flex justify-between items-center">
-                                <span className="font-medium text-xs">
-                                  ₹{Number(order.total_amount).toFixed(2)}
-                                </span>
-                                <div className="flex gap-1">
-                                  {order.status === 'placed' && (
-                                    <Button 
-                                      size="sm" 
-                                      variant="outline"
-                                      onClick={() => updateOrderStatus(order.id, 'preparing')}
-                                      className="h-6 text-xs bg-amber-50 hover:bg-amber-100 border-amber-200"
-                                    >
-                                      <Utensils className="h-3 w-3 mr-1" /> Prepare
-                                    </Button>
-                                  )}
-                                  {order.status === 'preparing' && (
-                                    <Button 
-                                      size="sm" 
-                                      variant="outline"
-                                      onClick={() => updateOrderStatus(order.id, 'ready')}
-                                      className="h-6 text-xs bg-green-50 hover:bg-green-100 border-green-200"
-                                    >
-                                      <CheckCircle className="h-3 w-3 mr-1" /> Ready
-                                    </Button>
-                                  )}
-                                  {order.status === 'ready' && (
-                                    <Button 
-                                      size="sm" 
-                                      variant="outline"
-                                      onClick={() => updateOrderStatus(order.id, 'completed')}
-                                      className="h-6 text-xs bg-gray-50 hover:bg-gray-100 border-gray-200"
-                                    >
-                                      <Package className="h-3 w-3 mr-1" /> Complete
-                                    </Button>
-                                  )}
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))
-                      )}
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          )}
+                        </TableBody>
+                      </Table>
                     </div>
                   </CardContent>
                 </Card>
               </TabsContent>
-            ))}
+              
+              <TabsContent value="table">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {Object.keys(ordersByTable)
+                    .filter(tableId => tableId !== 'no-table')
+                    .sort((a, b) => {
+                      // Split table IDs into base number and decimal part
+                      const [aBase, aDecimal] = a.split('.').map(Number);
+                      const [bBase, bDecimal] = b.split('.').map(Number);
+                      
+                      // First compare base numbers
+                      if (aBase !== bBase) {
+                        return aBase - bBase;
+                      }
+                      
+                      // If base numbers are equal, compare decimal parts
+                      // If one doesn't have a decimal part, it comes first
+                      if (isNaN(aDecimal) && isNaN(bDecimal)) return 0;
+                      if (isNaN(aDecimal)) return -1;
+                      if (isNaN(bDecimal)) return 1;
+                      
+                      return aDecimal - bDecimal;
+                    })
+                    .map((tableId) => {
+                    const tableOrders = ordersByTable[tableId];
+                    const tableTotal = tableOrders.reduce((sum, order) => sum + Number(order.total_amount), 0);
+                    const totalItems = tableOrders.reduce(
+                      (sum, order) => sum + order.items.reduce((itemSum, item) => itemSum + item.quantity, 0), 
+                      0
+                    );
+                    
+                    return (
+                      <Card key={tableId} className="overflow-hidden">
+                        <CardHeader className="bg-purple-50">
+                          <div className="flex justify-between items-center">
+                            <CardTitle className="text-lg flex items-center">
+                              <TableIcon className="h-5 w-5 mr-2 text-purple-800" />
+                              Table {tableId}
+                            </CardTitle>
+                            <div className="flex items-center gap-2">
+                              <Badge className="bg-purple-100 text-purple-800">
+                                {tableOrders.length} Orders
+                              </Badge>
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="text-purple-700 border-purple-200"
+                                onClick={() => handlePrintBill(tableOrders, tablePaymentModes[tableId] || 'Cash')}
+                                title="Print Bill"
+                              >
+                                <Printer className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="text-green-700 border-green-200"
+                                onClick={() => handleCheckout(tableOrders)}
+                                title="Checkout (Copy to Analytics)"
+                              >
+                                <ShoppingCart className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                className="h-7 px-2 text-destructive hover:text-destructive"
+                                onClick={() => {
+                                  if (window.confirm(`Are you sure you want to delete all orders from Table ${tableId}?`)) {
+                                    deleteTableOrders(tableId);
+                                  }
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                          <CardDescription>
+                            {totalItems} items · ₹{tableTotal.toFixed(2)} total
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent className="pt-4">
+                          <div className="space-y-4 max-h-80 overflow-y-auto">
+                            {tableOrders.map(order => (
+                              <div key={order.id} className="border border-gray-100 rounded-lg p-3">
+                                <div className="flex justify-between items-center mb-2">
+                                  <div className="flex items-center space-x-1">
+                                    <User className="h-4 w-4 text-purple-600" />
+                                    <span className="text-xs text-gray-500">{order.user_name || 'Guest'}</span>
+                                  </div>
+                                  <Badge 
+                                    className={
+                                      order.status === 'placed' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+                                      order.status === 'preparing' ? 'bg-amber-100 text-amber-800 border-amber-200' :
+                                      order.status === 'ready' ? 'bg-green-100 text-green-800 border-green-200' :
+                                      'bg-gray-100 text-gray-800 border-gray-200'
+                                    }
+                                  >
+                                    {order.status}
+                                  </Badge>
+                                </div>
+                                {order.items.map(item => (
+                                  <div key={item.id} className="flex justify-between text-sm py-1">
+                                    <span>
+                                      {item.quantity}× {item.item_name}
+                                      {item.variant_name && (
+                                        <span className="text-gray-500 text-xs"> ({item.variant_name})</span>
+                                      )}
+                                    </span>
+                                    <div className="flex items-center gap-2">
+                                      <span>₹{(item.price * item.quantity).toFixed(2)}</span>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6 text-destructive hover:text-destructive"
+                                        onClick={() => {
+                                          if (window.confirm(`Are you sure you want to delete ${item.quantity}× ${item.item_name}?`)) {
+                                            deleteOrderItem(order.id, item.id);
+                                          }
+                                        }}
+                                      >
+                                        <Trash2 className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ))}
+                                <Separator className="my-2" />
+                                <div className="flex justify-between items-center mt-1">
+                                  <span className="text-sm">₹{Number(order.total_amount).toFixed(2)}</span>
+                                  <div className="flex space-x-1">
+                                    {order.status === 'placed' && (
+                                      <Button 
+                                        size="sm" 
+                                        variant="outline" 
+                                        onClick={() => updateOrderStatus(order.id, 'preparing')}
+                                        className="text-xs h-7"
+                                      >
+                                        Prepare
+                                      </Button>
+                                    )}
+                                    {order.status === 'preparing' && (
+                                      <Button 
+                                        size="sm" 
+                                        variant="outline" 
+                                        onClick={() => updateOrderStatus(order.id, 'ready')}
+                                        className="text-xs h-7"
+                                      >
+                                        Ready
+                                      </Button>
+                                    )}
+                                    {order.status === 'ready' && (
+                                      <Button 
+                                        size="sm" 
+                                        variant="outline" 
+                                        onClick={() => updateOrderStatus(order.id, 'completed')}
+                                        className="text-xs h-7"
+                                      >
+                                        Complete
+                                      </Button>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                  
+                  {!Object.keys(ordersByTable).filter(id => id !== 'no-table').length && (
+                    <Card className="col-span-full">
+                      <CardContent className="pt-6 pb-6 text-center">
+                        <TableIcon className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                        <p className="text-gray-500">No table orders found</p>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+              </TabsContent>
+              
+              {['placed', 'preparing', 'ready', 'completed'].map(status => (
+                <TabsContent key={status} value={status}>
+                  <Card className="border-purple-100">
+                    <CardHeader className="p-3">
+                      <CardTitle className="capitalize text-base md:text-lg">{status} Orders</CardTitle>
+                      <CardDescription className="text-xs">
+                        Showing {filteredOrders.length} orders with status "{status}"
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-2">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                        {filteredOrders.length === 0 ? (
+                          <div className="col-span-full text-center py-8 text-gray-500 text-xs">
+                            No {status} orders found
+                          </div>
+                        ) : (
+                          filteredOrders.map(order => (
+                            <Card key={order.id} className="overflow-hidden border-purple-100">
+                              <CardHeader className="p-3 bg-purple-50">
+                                <div className="flex justify-between items-start">
+                                  <div>
+                                    <div className="text-xs text-gray-500">
+                                      {format(new Date(order.created_at), 'MMM d, h:mm a')}
+                                    </div>
+                                    <div className="font-medium flex items-center text-sm">
+                                      <User className="h-3 w-3 mr-1 text-purple-600" />
+                                      {order.user_name || 'Guest'}
+                                    </div>
+                                    <div className="font-medium flex items-center text-sm mt-1">
+                                      {order.table_id ? (
+                                        <div className="flex items-center">
+                                          <TableIcon className="h-3 w-3 mr-1 text-purple-600" />
+                                          Table {order.table_id}
+                                        </div>
+                                      ) : (
+                                        <div className="flex items-center">
+                                          <Smartphone className="h-3 w-3 mr-1" />
+                                          Individual
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <Badge 
+                                    className={`text-xs ${
+                                      order.status === 'placed' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+                                      order.status === 'preparing' ? 'bg-amber-100 text-amber-800 border-amber-200' :
+                                      order.status === 'ready' ? 'bg-green-100 text-green-800 border-green-200' :
+                                      'bg-gray-100 text-gray-800 border-gray-200'
+                                    }`}
+                                  >
+                                    {order.status}
+                                  </Badge>
+                                </div>
+                              </CardHeader>
+                              <CardContent className="p-3">
+                                <div className="space-y-1">
+                                  {order.items.map(item => (
+                                    <div key={item.id} className="flex justify-between text-xs">
+                                      <span>
+                                        {item.quantity}× {item.item_name}
+                                        {item.variant_name && (
+                                          <span className="text-gray-500"> ({item.variant_name})</span>
+                                        )}
+                                      </span>
+                                      <span>₹{(item.price * item.quantity).toFixed(2)}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                                <Separator className="my-2" />
+                                <div className="flex justify-between items-center">
+                                  <span className="font-medium text-xs">
+                                    ₹{Number(order.total_amount).toFixed(2)}
+                                  </span>
+                                  <div className="flex gap-1">
+                                    {order.status === 'placed' && (
+                                      <Button 
+                                        size="sm" 
+                                        variant="outline"
+                                        onClick={() => updateOrderStatus(order.id, 'preparing')}
+                                        className="h-6 text-xs bg-amber-50 hover:bg-amber-100 border-amber-200"
+                                      >
+                                        <Utensils className="h-3 w-3 mr-1" /> Prepare
+                                      </Button>
+                                    )}
+                                    {order.status === 'preparing' && (
+                                      <Button 
+                                        size="sm" 
+                                        variant="outline"
+                                        onClick={() => updateOrderStatus(order.id, 'ready')}
+                                        className="h-6 text-xs bg-green-50 hover:bg-green-100 border-green-200"
+                                      >
+                                        <CheckCircle className="h-3 w-3 mr-1" /> Ready
+                                      </Button>
+                                    )}
+                                    {order.status === 'ready' && (
+                                      <Button 
+                                        size="sm" 
+                                        variant="outline"
+                                        onClick={() => updateOrderStatus(order.id, 'completed')}
+                                        className="h-6 text-xs bg-gray-50 hover:bg-gray-100 border-gray-200"
+                                      >
+                                        <Package className="h-3 w-3 mr-1" /> Complete
+                                      </Button>
+                                    )}
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              ))}
+            </div>
           </Tabs>
         </div>
         
